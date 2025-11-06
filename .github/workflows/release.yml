@@ -18,6 +18,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Validate input
+        run: |
+          # validate argument
+          if  [[ $version != develo* ]] && [[ $version != v* ]] && [[ $version != branch* ]] ;
+          then
+            echo "Argument '$version' does not start with a d or with a v or a b"
+            exit 1
+          fi
+        env:
+          version: ${{ github.event_name == 'schedule' && 'develop' || inputs.version }}
       - name: Checkout
         uses: actions/checkout@v5
         with:
@@ -36,6 +46,14 @@ jobs:
           extensions: mbstring, intl, zip, bcmath
       - name: Switch and pull
         run: |
+          # validate argument
+          if  [[ $version != d* ]] && [[ $version != v* ]] ;
+          then
+            echo 'Argument does not start with a d or with a v'
+            exit 1
+          fi
+
+
           #
           # Always check out origin/develop, unless its a branch release.
           #
