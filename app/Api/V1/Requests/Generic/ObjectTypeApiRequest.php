@@ -24,13 +24,15 @@ declare(strict_types=1);
 namespace FireflyIII\Api\V1\Requests\Generic;
 
 use FireflyIII\Api\V1\Requests\ApiRequest;
+use FireflyIII\Enums\AccountTypeEnum;
 use FireflyIII\Models\Account;
 use FireflyIII\Models\Transaction;
 use FireflyIII\Rules\Account\IsValidAccountTypeList;
 use FireflyIII\Rules\TransactionType\IsValidTransactionTypeList;
 use FireflyIII\Support\Http\Api\AccountFilter;
 use FireflyIII\Support\Http\Api\TransactionFilter;
-use Illuminate\Validation\Validator;
+use Illuminate\Contracts\Validation\Validator;
+use Override;
 use RuntimeException;
 
 class ObjectTypeApiRequest extends ApiRequest
@@ -40,6 +42,7 @@ class ObjectTypeApiRequest extends ApiRequest
 
     private ?string $objectType = null;
 
+    #[Override]
     public function handleConfig(array $config): void
     {
         parent::handleConfig($config);
@@ -86,7 +89,11 @@ class ObjectTypeApiRequest extends ApiRequest
 
                         // no break
                     case Account::class:
-                        $this->attributes->set('types', $this->mapAccountTypes($type));
+                        $types = $this->mapAccountTypes($type);
+
+                        // remove system account types because autocomplete doesn't need them.
+                        $types = array_values(array_diff($types, [AccountTypeEnum::INITIAL_BALANCE->value, AccountTypeEnum::RECONCILIATION->value, AccountTypeEnum::LIABILITY_CREDIT->value]));
+                        $this->attributes->set('types', $types);
 
                         break;
 
