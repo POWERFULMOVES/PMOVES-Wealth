@@ -24,8 +24,10 @@ declare(strict_types=1);
 
 namespace FireflyIII\Api\V1\Controllers\Autocomplete;
 
+use Illuminate\Http\Request;
 use FireflyIII\Api\V1\Controllers\Controller;
 use FireflyIII\Api\V1\Requests\Autocomplete\AutocompleteApiRequest;
+use FireflyIII\Api\V1\Requests\Autocomplete\AutocompleteTransactionApiRequest;
 use FireflyIII\Enums\UserRoleEnum;
 use FireflyIII\Models\TransactionGroup;
 use FireflyIII\Models\TransactionJournal;
@@ -50,7 +52,7 @@ class TransactionController extends Controller
     {
         parent::__construct();
         $this->middleware(
-            function ($request, $next) {
+            function (Request $request, $next) {
                 $this->validateUserGroup($request);
                 $this->repository      = app(JournalRepositoryInterface::class);
                 $this->groupRepository = app(TransactionGroupRepositoryInterface::class);
@@ -64,7 +66,7 @@ class TransactionController extends Controller
         );
     }
 
-    public function transactions(AutocompleteApiRequest $request): JsonResponse
+    public function transactions(AutocompleteTransactionApiRequest $request): JsonResponse
     {
         $result   = $this->repository->searchJournalDescriptions($request->attributes->get('query'), $request->attributes->get('limit'));
 

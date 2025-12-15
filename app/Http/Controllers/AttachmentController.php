@@ -65,22 +65,20 @@ class AttachmentController extends Controller
      *
      * @return Factory|View
      */
-    public function delete(Attachment $attachment)
+    public function delete(Attachment $attachment): Factory|\Illuminate\Contracts\View\View
     {
         $subTitle = (string) trans('firefly.delete_attachment', ['name' => $attachment->filename]);
 
         // put previous url in session
         $this->rememberPreviousUrl('attachments.delete.url');
 
-        return view('attachments.delete', compact('attachment', 'subTitle'));
+        return view('attachments.delete', ['attachment' => $attachment, 'subTitle' => $subTitle]);
     }
 
     /**
      * Destroy attachment.
-     *
-     * @return Redirector|RedirectResponse
      */
-    public function destroy(Request $request, Attachment $attachment)
+    public function destroy(Request $request, Attachment $attachment): Redirector|RedirectResponse
     {
         $name = $attachment->filename;
 
@@ -95,7 +93,7 @@ class AttachmentController extends Controller
     /**
      * Download attachment to PC.
      *
-     * @return LaravelResponse
+     * @return LaravelResponse|View
      *
      * @throws FireflyException
      */
@@ -121,8 +119,9 @@ class AttachmentController extends Controller
 
             return $response;
         }
+        $message = 'Could not find the indicated attachment. The file is no longer there.';
 
-        throw new FireflyException('Could not find the indicated attachment. The file is no longer there.');
+        return view('errors.error', ['message' => $message]);
     }
 
     /**
@@ -130,7 +129,7 @@ class AttachmentController extends Controller
      *
      * @return Factory|View
      */
-    public function edit(Request $request, Attachment $attachment)
+    public function edit(Request $request, Attachment $attachment): Factory|\Illuminate\Contracts\View\View
     {
         $subTitleIcon = 'fa-pencil';
         $subTitle     = (string) trans('firefly.edit_attachment', ['name' => $attachment->filename]);
@@ -145,7 +144,7 @@ class AttachmentController extends Controller
         ];
         $request->session()->flash('preFilled', $preFilled);
 
-        return view('attachments.edit', compact('attachment', 'subTitleIcon', 'subTitle'));
+        return view('attachments.edit', ['attachment' => $attachment, 'subTitleIcon' => $subTitleIcon, 'subTitle' => $subTitle]);
     }
 
     /**
@@ -153,18 +152,18 @@ class AttachmentController extends Controller
      *
      * @return Factory|View
      */
-    public function index()
+    public function index(): Factory|\Illuminate\Contracts\View\View
     {
         $set = $this->repository->get()->reverse();
         $set = $set->each(
-            function (Attachment $attachment) {
+            function (Attachment $attachment): Attachment {
                 $attachment->file_exists = $this->repository->exists($attachment);
 
                 return $attachment;
             }
         );
 
-        return view('attachments.index', compact('set'));
+        return view('attachments.index', ['set' => $set]);
     }
 
     /**
@@ -194,7 +193,7 @@ class AttachmentController extends Controller
      *
      * @throws FireflyException
      */
-    public function view(Attachment $attachment): LaravelResponse
+    public function view(Attachment $attachment): LaravelResponse|View
     {
         if ($this->repository->exists($attachment)) {
             $content = $this->repository->getContent($attachment);
@@ -223,6 +222,8 @@ class AttachmentController extends Controller
             );
         }
 
-        throw new FireflyException('Could not find the indicated attachment. The file is no longer there.');
+        $message = 'Could not find the indicated attachment. The file is no longer there.';
+
+        return view('errors.error', ['message' => $message]);
     }
 }

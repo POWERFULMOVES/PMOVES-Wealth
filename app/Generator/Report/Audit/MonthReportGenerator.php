@@ -100,13 +100,13 @@ class MonthReportGenerator implements ReportGeneratorInterface
         ];
 
         try {
-            $result = view('reports.audit.report', compact('reportType', 'accountIds', 'auditData', 'hideable', 'defaultShow'))
+            $result = view('reports.audit.report', ['reportType' => $reportType, 'accountIds' => $accountIds, 'auditData' => $auditData, 'hideable' => $hideable, 'defaultShow' => $defaultShow])
                 ->with('start', $this->start)->with('end', $this->end)->with('accounts', $this->accounts)
                 ->render()
             ;
         } catch (Throwable $e) {
-            app('log')->error(sprintf('Cannot render reports.audit.report: %s', $e->getMessage()));
-            app('log')->error($e->getTraceAsString());
+            Log::error(sprintf('Cannot render reports.audit.report: %s', $e->getMessage()));
+            Log::error($e->getTraceAsString());
             $result = sprintf('Could not render report view: %s', $e->getMessage());
 
             throw new FireflyException($result, 0, $e);

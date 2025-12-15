@@ -33,8 +33,7 @@ use Psr\Container\NotFoundExceptionInterface;
  */
 class FiscalHelper implements FiscalHelperInterface
 {
-    /** @var bool */
-    protected $useCustomFiscalYear;
+    protected bool $useCustomFiscalYear;
 
     /**
      * FiscalHelper constructor.
@@ -49,9 +48,9 @@ class FiscalHelper implements FiscalHelperInterface
      */
     public function endOfFiscalYear(Carbon $date): Carbon
     {
-        // app('log')->debug(sprintf('Now in endOfFiscalYear(%s).', $date->format('Y-m-d')));
+        // Log::debug(sprintf('Now in endOfFiscalYear(%s).', $date->format('Y-m-d')));
         $endDate = $this->startOfFiscalYear($date);
-        if (true === $this->useCustomFiscalYear) {
+        if ($this->useCustomFiscalYear) {
             // add 1 year and sub 1 day
             $endDate->addYear();
             $endDate->subDay();
@@ -59,7 +58,7 @@ class FiscalHelper implements FiscalHelperInterface
         if (false === $this->useCustomFiscalYear) {
             $endDate->endOfYear();
         }
-        // app('log')->debug(sprintf('Result of endOfFiscalYear(%s) = %s', $date->format('Y-m-d'), $endDate->format('Y-m-d')));
+        // Log::debug(sprintf('Result of endOfFiscalYear(%s) = %s', $date->format('Y-m-d'), $endDate->format('Y-m-d')));
 
         return $endDate;
     }
@@ -74,7 +73,7 @@ class FiscalHelper implements FiscalHelperInterface
     {
         // get start mm-dd. Then create a start date in the year passed.
         $startDate = clone $date;
-        if (true === $this->useCustomFiscalYear) {
+        if ($this->useCustomFiscalYear) {
             $prefStartStr = Preferences::get('fiscalYearStart', '01-01')->data;
             if (is_array($prefStartStr)) {
                 $prefStartStr = '01-01';
@@ -92,7 +91,7 @@ class FiscalHelper implements FiscalHelperInterface
             $startDate->startOfYear();
         }
 
-        // app('log')->debug(sprintf('Result of startOfFiscalYear(%s) = %s', $date->format('Y-m-d'), $startDate->format('Y-m-d')));
+        // Log::debug(sprintf('Result of startOfFiscalYear(%s) = %s', $date->format('Y-m-d'), $startDate->format('Y-m-d')));
 
         return $startDate;
     }

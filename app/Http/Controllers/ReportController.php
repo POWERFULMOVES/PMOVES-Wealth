@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Http\Controllers;
 
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use FireflyIII\Enums\AccountTypeEnum;
 use FireflyIII\Exceptions\FireflyException;
@@ -82,7 +83,7 @@ class ReportController extends Controller
     public function auditReport(Collection $accounts, Carbon $start, Carbon $end)
     {
         if ($end < $start) {
-            return view('error')->with('message', (string) trans('firefly.end_after_start_date'));
+            return view('errors.error')->with('message', (string) trans('firefly.end_after_start_date'));
         }
         $this->repository->cleanupBudgets();
         $start->endOfDay(); // end of day so the final balance is at the end of that day.
@@ -115,7 +116,7 @@ class ReportController extends Controller
     public function budgetReport(Collection $accounts, Collection $budgets, Carbon $start, Carbon $end)
     {
         if ($end < $start) {
-            return view('error')->with('message', (string) trans('firefly.end_after_start_date'));
+            return view('errors.error')->with('message', (string) trans('firefly.end_after_start_date'));
         }
         $this->repository->cleanupBudgets();
         $start->endOfDay(); // end of day so the final balance is at the end of that day.
@@ -149,22 +150,13 @@ class ReportController extends Controller
     public function categoryReport(Collection $accounts, Collection $categories, Carbon $start, Carbon $end)
     {
         if ($end < $start) {
-            return view('error')->with('message', (string) trans('firefly.end_after_start_date'));
+            return view('errors.error')->with('message', (string) trans('firefly.end_after_start_date'));
         }
         $this->repository->cleanupBudgets();
         $start->endOfDay(); // end of day so the final balance is at the end of that day.
         $end->endOfDay();
 
-        app('view')->share(
-            'subTitle',
-            trans(
-                'firefly.report_category',
-                [
-                    'start' => $start->isoFormat($this->monthAndDayFormat),
-                    'end'   => $end->isoFormat($this->monthAndDayFormat),
-                ]
-            )
-        );
+        app('view')->share('subTitle', trans('firefly.report_category', ['start' => $start->isoFormat($this->monthAndDayFormat), 'end'   => $end->isoFormat($this->monthAndDayFormat)]));
 
         $generator = ReportGeneratorFactory::reportGenerator('Category', $start, $end);
         $generator->setAccounts($accounts);
@@ -183,7 +175,7 @@ class ReportController extends Controller
     public function defaultReport(Collection $accounts, Carbon $start, Carbon $end)
     {
         if ($end < $start) {
-            return view('error')->with('message', (string) trans('firefly.end_after_start_date'));
+            return view('errors.error')->with('message', (string) trans('firefly.end_after_start_date'));
         }
 
         $this->repository->cleanupBudgets();
@@ -201,11 +193,9 @@ class ReportController extends Controller
     /**
      * Show account report.
      *
-     * @return string
-     *
      * @throws FireflyException
      */
-    public function doubleReport(Collection $accounts, Collection $expense, Carbon $start, Carbon $end)
+    public function doubleReport(Collection $accounts, Collection $expense, Carbon $start, Carbon $end): string
     {
         if ($end < $start) {
             [$start, $end] = [$end, $start];
@@ -232,7 +222,7 @@ class ReportController extends Controller
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      */
-    public function index(AccountRepositoryInterface $repository)
+    public function index(AccountRepositoryInterface $repository): Factory|\Illuminate\Contracts\View\View
     {
         /** @var Carbon $start */
         $start            = clone session('first', today(config('app.timezone')));
@@ -264,7 +254,7 @@ class ReportController extends Controller
         $accountList      = implode(',', $accounts->pluck('id')->toArray());
         $this->repository->cleanupBudgets();
 
-        return view('reports.index', compact('months', 'accounts', 'start', 'accountList', 'groupedAccounts', 'customFiscalYear'));
+        return view('reports.index', ['months' => $months, 'accounts' => $accounts, 'start' => $start, 'accountList' => $accountList, 'groupedAccounts' => $groupedAccounts, 'customFiscalYear' => $customFiscalYear]);
     }
 
     /**
@@ -305,7 +295,7 @@ class ReportController extends Controller
         $double     = implode(',', $request->getDoubleList()->pluck('id')->toArray());
 
         if (0 === $request->getAccountList()->count()) {
-            app('log')->debug('Account count is zero');
+            Log::debug('Account count is zero');
             session()->flash('error', (string) trans('firefly.select_at_least_one_account'));
 
             return redirect(route('reports.index'));
@@ -336,7 +326,7 @@ class ReportController extends Controller
         }
 
         if ($request->getEndDate() < $request->getStartDate()) {
-            return view('error')->with('message', (string) trans('firefly.end_after_start_date'));
+            return view('errors.error')->with('message', (string) trans('firefly.end_after_start_date'));
         }
 
         $url        = match ($reportType) {
@@ -361,7 +351,7 @@ class ReportController extends Controller
     public function tagReport(Collection $accounts, Collection $tags, Carbon $start, Carbon $end)
     {
         if ($end < $start) {
-            return view('error')->with('message', (string) trans('firefly.end_after_start_date'));
+            return view('errors.error')->with('message', (string) trans('firefly.end_after_start_date'));
         }
         $this->repository->cleanupBudgets();
         $start->endOfDay(); // end of day so the final balance is at the end of that day.

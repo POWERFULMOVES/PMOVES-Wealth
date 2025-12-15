@@ -23,10 +23,11 @@ declare(strict_types=1);
 
 namespace FireflyIII\Api\V1\Requests;
 
+use Override;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Validator;
 use RuntimeException;
 
 abstract class AggregateFormRequest extends ApiRequest
@@ -36,15 +37,18 @@ abstract class AggregateFormRequest extends ApiRequest
      */
     protected array $requests = [];
 
-    /** @return class-string[] */
+    /** @return array<array|string> */
     abstract protected function getRequests(): array;
 
+    #[Override]
     public function initialize(array $query = [], array $request = [], array $attributes = [], array $cookies = [], array $files = [], array $server = [], $content = null): void
     {
         parent::initialize($query, $request, $attributes, $cookies, $files, $server, $content);
 
         // instantiate all subrequests and share current requests' bags with them
         Log::debug('Initializing AggregateFormRequest.');
+
+        /** @var array|string $config */
         foreach ($this->getRequests() as $config) {
             $requestClass         = is_array($config) ? array_shift($config) : $config;
 
@@ -74,7 +78,7 @@ abstract class AggregateFormRequest extends ApiRequest
         // check all subrequests for rules and combine them
         return array_reduce(
             $this->requests,
-            static fn (array $rules, FormRequest $request) => $rules
+            static fn (array $rules, FormRequest $request): array => $rules
                 + (
                     method_exists($request, 'rules')
                     ? $request->rules()
@@ -89,7 +93,7 @@ abstract class AggregateFormRequest extends ApiRequest
         // register all subrequests' validators
         foreach ($this->requests as $request) {
             if (method_exists($request, 'withValidator')) {
-                Log::debug(sprintf('Process withValidator from class %s', get_class($request)));
+                Log::debug(sprintf('Process withValidator from class %s', $request::class));
                 $request->withValidator($validator);
             }
         }

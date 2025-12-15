@@ -263,7 +263,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface, UserGroupInte
                 [ // @phpstan-ignore-line
                     'rules'              => static function (HasMany $query): void {
                         $query->orderBy('order', 'ASC');
-                        $query->where('rules.active', true);
+                        // $query->where('rules.active', true);
                     },
                     'rules.ruleTriggers' => static function (HasMany $query): void {
                         $query->orderBy('order', 'ASC');
@@ -280,15 +280,15 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface, UserGroupInte
         Log::debug(sprintf('Will filter getRuleGroupsWithRules on "%s".', $filter));
 
         return $groups->map(
-            static function (RuleGroup $group) use ($filter) { // @phpstan-ignore-line
+            static function (RuleGroup $group) use ($filter): RuleGroup { // @phpstan-ignore-line
                 Log::debug(sprintf('Now filtering group #%d', $group->id));
                 // filter the rules in the rule group:
                 $group->rules = $group->rules->filter(
-                    static function (Rule $rule) use ($filter) {
+                    static function (Rule $rule) use ($filter, $group): bool {
                         Log::debug(sprintf('Now filtering rule #%d', $rule->id));
                         foreach ($rule->ruleTriggers as $trigger) {
                             if ('user_action' === $trigger->trigger_type && $filter === $trigger->trigger_value) {
-                                Log::debug(sprintf('Rule #%d triggers on %s, include it.', $rule->id, $filter));
+                                Log::debug(sprintf('Rule #%d triggers on %s, include it in rule group #%d.', $rule->id, $filter, $group->id));
 
                                 return true;
                             }
@@ -337,15 +337,15 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface, UserGroupInte
         Log::debug(sprintf('Will filter getRuleGroupsWithRules on "%s".', $filter));
 
         return $groups->map(
-            static function (RuleGroup $group) use ($filter) { // @phpstan-ignore-line
+            static function (RuleGroup $group) use ($filter): RuleGroup { // @phpstan-ignore-line
                 Log::debug(sprintf('Now filtering group #%d', $group->id));
                 // filter the rules in the rule group:
                 $group->rules = $group->rules->filter(
-                    static function (Rule $rule) use ($filter) {
+                    static function (Rule $rule) use ($filter, $group): bool {
                         Log::debug(sprintf('Now filtering rule #%d', $rule->id));
                         foreach ($rule->ruleTriggers as $trigger) {
                             if ('user_action' === $trigger->trigger_type && $filter === $trigger->trigger_value) {
-                                Log::debug(sprintf('Rule #%d triggers on %s, include it.', $rule->id, $filter));
+                                Log::debug(sprintf('Rule #%d triggers on %s, include it in rule group #%d.', $rule->id, $filter, $group->id));
 
                                 return true;
                             }

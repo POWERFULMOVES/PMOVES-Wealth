@@ -28,6 +28,7 @@ use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Generator\Report\ReportGeneratorInterface;
 use Illuminate\Support\Collection;
 use Throwable;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class MonthReportGenerator.
@@ -35,13 +36,13 @@ use Throwable;
 class YearReportGenerator implements ReportGeneratorInterface
 {
     /** @var Collection The accounts involved. */
-    private $accounts;
+    private ?Collection $accounts = null;
 
     /** @var Carbon The end date. */
-    private $end;
+    private ?Carbon $end          = null;
 
     /** @var Carbon The start date. */
-    private $start;
+    private ?Carbon $start        = null;
 
     /**
      * Generates the report.
@@ -57,11 +58,11 @@ class YearReportGenerator implements ReportGeneratorInterface
         try {
             $result = view(
                 'reports.default.year',
-                compact('accountIds', 'reportType')
+                ['accountIds' => $accountIds, 'reportType' => $reportType]
             )->with('start', $this->start)->with('end', $this->end)->render();
         } catch (Throwable $e) {
-            app('log')->error(sprintf('Cannot render reports.account.report: %s', $e->getMessage()));
-            app('log')->error($e->getTraceAsString());
+            Log::error(sprintf('Cannot render reports.account.report: %s', $e->getMessage()));
+            Log::error($e->getTraceAsString());
             $result = 'Could not render report view.';
 
             throw new FireflyException($result, 0, $e);

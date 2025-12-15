@@ -69,7 +69,7 @@ class HomeController extends Controller
             $stringStart = e((string) $request->get('start'));
             $start       = Carbon::createFromFormat('Y-m-d', $stringStart);
         } catch (InvalidFormatException) {
-            app('log')->error(sprintf('Start: could not parse date string "%s" so ignore it.', $stringStart));
+            Log::error(sprintf('Start: could not parse date string "%s" so ignore it.', $stringStart));
             $start = Carbon::now()->startOfMonth();
         }
 
@@ -77,7 +77,7 @@ class HomeController extends Controller
             $stringEnd = e((string) $request->get('end'));
             $end       = Carbon::createFromFormat('Y-m-d', $stringEnd);
         } catch (InvalidFormatException) {
-            app('log')->error(sprintf('End could not parse date string "%s" so ignore it.', $stringEnd));
+            Log::error(sprintf('End could not parse date string "%s" so ignore it.', $stringEnd));
             $end = Carbon::now()->endOfMonth();
         }
         if (null === $start) {
@@ -90,12 +90,12 @@ class HomeController extends Controller
         $label         = $request->get('label');
         $isCustomRange = false;
 
-        app('log')->debug('dateRange: Received dateRange', ['start' => $stringStart, 'end' => $stringEnd, 'label' => $request->get('label')]);
+        Log::debug('dateRange: Received dateRange', ['start' => $stringStart, 'end' => $stringEnd, 'label' => $request->get('label')]);
         // check if the label is "everything" or "Custom range" which will betray
         // a possible problem with the budgets.
         if ($label === (string) trans('firefly.everything') || $label === (string) trans('firefly.customRange')) {
             $isCustomRange = true;
-            app('log')->debug('Range is now marked as "custom".');
+            Log::debug('Range is now marked as "custom".');
         }
 
         $diff          = $start->diffInDays($end, true) + 1;
@@ -105,11 +105,11 @@ class HomeController extends Controller
         }
 
         $request->session()->put('is_custom_range', $isCustomRange);
-        app('log')->debug(sprintf('Set is_custom_range to %s', var_export($isCustomRange, true)));
+        Log::debug(sprintf('Set is_custom_range to %s', var_export($isCustomRange, true)));
         $request->session()->put('start', $start);
-        app('log')->debug(sprintf('Set start to %s', $start->format('Y-m-d H:i:s')));
+        Log::debug(sprintf('Set start to %s', $start->format('Y-m-d H:i:s')));
         $request->session()->put('end', $end);
-        app('log')->debug(sprintf('Set end to %s', $end->format('Y-m-d H:i:s')));
+        Log::debug(sprintf('Set end to %s', $end->format('Y-m-d H:i:s')));
 
         return response()->json(['ok' => 'ok']);
     }
@@ -161,7 +161,7 @@ class HomeController extends Controller
         $today          = today(config('app.timezone'));
         $accounts       = $accounts->sortBy('order'); // sort frontpage accounts by order
 
-        app('log')->debug('Frontpage accounts are ', $frontpageArray);
+        Log::debug('Frontpage accounts are ', $frontpageArray);
 
         /** @var BillRepositoryInterface $billRepository */
         $billRepository = app(BillRepositoryInterface::class);
@@ -179,7 +179,7 @@ class HomeController extends Controller
         $user           = auth()->user();
         event(new RequestedVersionCheckStatus($user));
 
-        return view('index', compact('count', 'subTitle', 'transactions', 'billCount', 'start', 'end', 'today', 'pageTitle'));
+        return view('index', ['count' => $count, 'subTitle' => $subTitle, 'transactions' => $transactions, 'billCount' => $billCount, 'start' => $start, 'end' => $end, 'today' => $today, 'pageTitle' => $pageTitle]);
     }
 
     private function indexV2(): mixed
@@ -194,6 +194,6 @@ class HomeController extends Controller
         $user      = auth()->user();
         event(new RequestedVersionCheckStatus($user));
 
-        return view('index', compact('subTitle', 'start', 'end', 'pageTitle'));
+        return view('index', ['subTitle' => $subTitle, 'start' => $start, 'end' => $end, 'pageTitle' => $pageTitle]);
     }
 }

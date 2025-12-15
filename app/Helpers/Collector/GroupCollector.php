@@ -320,8 +320,8 @@ class GroupCollector implements GroupCollectorInterface
 
     public function dumpQueryInLogs(): void
     {
-        app('log')->debug($this->query->select($this->fields)->toSql());
-        app('log')->debug('Bindings', $this->query->getBindings());
+        Log::debug($this->query->select($this->fields)->toSql());
+        Log::debug('Bindings', $this->query->getBindings());
     }
 
     /**
@@ -371,7 +371,7 @@ class GroupCollector implements GroupCollectorInterface
     {
         if (0 !== count($journalIds)) {
             // make all integers.
-            $integerIDs = array_map('intval', $journalIds);
+            $integerIDs = array_map(intval(...), $journalIds);
 
             $this->query->whereNotIn('transaction_journals.id', $integerIDs);
         }
@@ -590,7 +590,7 @@ class GroupCollector implements GroupCollectorInterface
             $result['created_at']->setTimezone(config('app.timezone'));
             $result['updated_at']->setTimezone(config('app.timezone'));
         } catch (Exception $e) { // intentional generic exception
-            app('log')->error($e->getMessage());
+            Log::error($e->getMessage());
 
             throw new FireflyException($e->getMessage(), 0, $e);
         }
@@ -621,7 +621,7 @@ class GroupCollector implements GroupCollectorInterface
             try {
                 $tagDate = Carbon::parse($augumentedJournal['tag_date']);
             } catch (InvalidFormatException $e) {
-                app('log')->debug(sprintf('Could not parse date: %s', $e->getMessage()));
+                Log::debug(sprintf('Could not parse date: %s', $e->getMessage()));
             }
 
             $result['tags'][$tagId] = [
@@ -697,7 +697,7 @@ class GroupCollector implements GroupCollectorInterface
             try {
                 $tagDate = Carbon::parse($newArray['tag_date']);
             } catch (InvalidFormatException $e) {
-                app('log')->debug(sprintf('Could not parse date: %s', $e->getMessage()));
+                Log::debug(sprintf('Could not parse date: %s', $e->getMessage()));
             }
 
             $existingJournal['tags'][$tagId] = [
@@ -779,17 +779,16 @@ class GroupCollector implements GroupCollectorInterface
     {
         $currentCollection = $collection;
         $countFilters      = count($this->postFilters);
-        $countCollection   = count($currentCollection);
         if (0 === $countFilters) {
             return $currentCollection;
         }
-        app('log')->debug(sprintf('GroupCollector: postFilterCollection has %d filter(s) and %d transaction(s).', count($this->postFilters), count($currentCollection)));
+        Log::debug(sprintf('GroupCollector: postFilterCollection has %d filter(s) and %d transaction(s).', count($this->postFilters), count($currentCollection)));
 
         /**
          * @var Closure $function
          */
         foreach ($this->postFilters as $function) {
-            app('log')->debug('Applying filter...');
+            Log::debug('Applying filter...');
             $nextCollection    = new Collection();
 
             // loop everything in the current collection
@@ -814,7 +813,7 @@ class GroupCollector implements GroupCollectorInterface
                 }
             }
             $currentCollection = $nextCollection;
-            app('log')->debug(sprintf('GroupCollector: postFilterCollection has %d transaction(s) left.', count($currentCollection)));
+            Log::debug(sprintf('GroupCollector: postFilterCollection has %d transaction(s) left.', count($currentCollection)));
         }
 
         return $currentCollection;
@@ -875,7 +874,7 @@ class GroupCollector implements GroupCollectorInterface
     public function setLimit(int $limit): GroupCollectorInterface
     {
         $this->limit = $limit;
-        // app('log')->debug(sprintf('GroupCollector: The limit is now %d', $limit));
+        // Log::debug(sprintf('GroupCollector: The limit is now %d', $limit));
 
         return $this;
     }
@@ -947,7 +946,7 @@ class GroupCollector implements GroupCollectorInterface
     {
         if (0 !== count($journalIds)) {
             // make all integers.
-            $integerIDs = array_map('intval', $journalIds);
+            $integerIDs = array_map(intval(...), $journalIds);
             Log::debug(sprintf('GroupCollector: setJournalIds: %s', implode(', ', $integerIDs)));
 
             $this->query->whereIn('transaction_journals.id', $integerIDs);
@@ -973,7 +972,7 @@ class GroupCollector implements GroupCollectorInterface
     {
         $page       = 0 === $page ? 1 : $page;
         $this->page = $page;
-        // app('log')->debug(sprintf('GroupCollector: page is now %d', $page));
+        // Log::debug(sprintf('GroupCollector: page is now %d', $page));
 
         return $this;
     }
@@ -1066,7 +1065,7 @@ class GroupCollector implements GroupCollectorInterface
      */
     private function startQuery(): void
     {
-        // app('log')->debug('GroupCollector::startQuery');
+        // Log::debug('GroupCollector::startQuery');
         $this->query = $this->user
             // ->transactionGroups()
             // ->leftJoin('transaction_journals', 'transaction_journals.transaction_group_id', 'transaction_groups.id')
@@ -1126,7 +1125,7 @@ class GroupCollector implements GroupCollectorInterface
      */
     private function startQueryForGroup(): void
     {
-        // app('log')->debug('GroupCollector::startQuery');
+        // Log::debug('GroupCollector::startQuery');
         $this->query = $this->userGroup
             ->transactionJournals()
             ->leftJoin('transaction_groups', 'transaction_journals.transaction_group_id', 'transaction_groups.id')

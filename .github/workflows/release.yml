@@ -29,16 +29,32 @@ jobs:
         env:
           version: ${{ github.event_name == 'schedule' && 'develop' || inputs.version }}
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
+      - name: Detect GPG signing configuration
+        id: signing
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          if [ -n "$GPG_PRIVATE_KEY" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Import GPG key
+        if: ${{ steps.signing.outputs.enabled == 'true' }}
         uses: crazy-max/ghaction-import-gpg@v6
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
           git_user_signingkey: true
           git_commit_gpgsign: true
+      - name: Disable GPG signing (no key)
+        if: ${{ steps.signing.outputs.enabled != 'true' }}
+        run: |
+          git config commit.gpgsign false
+          git config tag.gpgsign false
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:

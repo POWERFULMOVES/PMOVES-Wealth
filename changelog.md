@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## 6.4.8 - 2025-11-14
+
+### Fixed
+
+- [Issue 11228](https://github.com/firefly-iii/firefly-iii/issues/11228) (Autocomplete fails when the requested account type list includes hidden account types) reported by @jgmm81
+
+## 6.4.7
+
+### Fixed
+
+- [Issue 11206](https://github.com/firefly-iii/firefly-iii/issues/11206) (New transaction shows additional option in input) reported by @zhiiwg
+
+## 6.4.6 - 2025-11-13
+
+### Fixed
+
+- [Issue 11157](https://github.com/firefly-iii/firefly-iii/issues/11157) (Redacted amounts misbehave with Reports) reported by @barreeeiroo
+- [Issue 11166](https://github.com/firefly-iii/firefly-iii/issues/11166) (Optional transaction information field not saved when updating a recuring transaction) reported by @Old-Veeh
+- [Issue 11185](https://github.com/firefly-iii/firefly-iii/issues/11185) (Internal server error after apply rule) reported by @Citroene
+- [Issue 11196](https://github.com/firefly-iii/firefly-iii/issues/11196) (Exception when editing recurring transaction) reported by @Insprill
+
+## 6.4.5 - 2025-11-09
+
+### Fixed
+
+- [Issue 11157](https://github.com/firefly-iii/firefly-iii/issues/11157) (Redacted amounts misbehave with Reports) reported by @barreeeiroo
+- [Issue 11166](https://github.com/firefly-iii/firefly-iii/issues/11166) (Optional transaction information field not saved when updating a recuring transaction) reported by @Old-Veeh
+- [Issue 11185](https://github.com/firefly-iii/firefly-iii/issues/11185) (Internal server error after apply rule) reported by @Citroene
+
 ## 6.4.4 - 2025-11-02
 
 ### Added
