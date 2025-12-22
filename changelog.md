@@ -3,6 +3,65 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## v6.4.14 - 2025-12-17
+
+### Fixed
+
+- [Issue 11368](https://github.com/firefly-iii/firefly-iii/issues/11368) (Attempt to read property "user" on null) reported by @simonwiles
+
+## v6.4.13 - 2025-12-17
+
+### Fixed
+
+- [Issue 11368](https://github.com/firefly-iii/firefly-iii/issues/11368) (Attempt to read property "user" on null) reported by @simonwiles
+
+## v6.4.12 - 2025-12-17
+
+### Fixed
+
+- [Issue 11368](https://github.com/firefly-iii/firefly-iii/issues/11368) (Attempt to read property "user" on null) reported by @simonwiles
+- [Issue 11367](https://github.com/firefly-iii/firefly-iii/issues/11367) (Expenses page has incorrect summary values) reported by @purplemeteorite
+
+## v6.4.11 - 2025-12-16
+
+### Fixed
+
+- [Issue 11356](https://github.com/firefly-iii/firefly-iii/issues/11356) (Dashboard - Budget - Left To Spend "Per day" shows total budget value) reported by @lucasarrudadev
+- [Issue 11357](https://github.com/firefly-iii/firefly-iii/issues/11357) (Firefly III v6.4.10 ran into an error: Undefined variable $uploadDir.) reported by @jgmm81
+
+## v6.4.10 - 2025-12-15
+
+### Added
+
+- Added amount event audit log
+
+### Fixed
+
+- [Issue 11328](https://github.com/firefly-iii/firefly-iii/issues/11328) (Three budget / account display bugs in latest version (annual budget + account list balance)) reported by @qingxianaaa
+- [Issue 11329](https://github.com/firefly-iii/firefly-iii/issues/11329) (Imported and auto-converted transfer from different currency issue) reported by @bozho
+- [Issue 11333](https://github.com/firefly-iii/firefly-iii/issues/11333) (Prepared statement contains too many placeholders) reported by @wendyliga
+- [Issue 11313](https://github.com/firefly-iii/firefly-iii/issues/11313) (Stop Processing and Executing Rule Group on Existing Transaction) reported by @watertrainer
+- [Discussion 11323](https://github.com/orgs/firefly-iii/discussions/11323) (File ownership problem) started by @enboig
+- [Issue 11337](https://github.com/firefly-iii/firefly-iii/issues/11337) (email notifications are sent to old email address after changing it through the web UI) reported by @xsolinsx
+- [Issue 11346](https://github.com/firefly-iii/firefly-iii/issues/11346) (Running balance restart from zero for no reason) reported by @Arkarr
+- [Issue 11310](https://github.com/firefly-iii/firefly-iii/issues/11310) (Period parameter doesn't work in API) reported by @kvdb06
+
+## 6.4.9 - 2025-11-28
+
+### Fixed
+
+- [Discussion 11211](https://github.com/orgs/firefly-iii/discussions/11211) (question about Transaction journal ID) started by @zhiiwg
+- [Issue 11247](https://github.com/firefly-iii/firefly-iii/issues/11247) (Optional transaction information not saved when updating a recurring transaction.) reported by @Tommy78649
+- [Issue 11267](https://github.com/firefly-iii/firefly-iii/issues/11267) (Tags can be added to elements that can't be removed) reported by @Fmstrat
+- [Issue 11281](https://github.com/firefly-iii/firefly-iii/issues/11281) (Webhooks are triggered twice when recurring creates transaction on cronjob) reported by @MexerSam
+- [Issue 11284](https://github.com/firefly-iii/firefly-iii/issues/11284) (500 Internal Server Error when deleting budget) reported by @jschollenberger
+- [Issue 11288](https://github.com/firefly-iii/firefly-iii/issues/11288) (Piggy bank creation form doesn't respect primary currency) reported by @jschollenberger
+- [Issue 11191](https://github.com/firefly-iii/firefly-iii/issues/11191) (Going beyond 6.4.2 displays wrong balance) reported by @The24KFool
+
+### API
+
+- [Issue 11265](https://github.com/firefly-iii/firefly-iii/issues/11265) (Inconsistent object type in exchange rates API) reported by @jfpedroza
+
 ## 6.4.8 - 2025-11-14
 
 ### Fixed

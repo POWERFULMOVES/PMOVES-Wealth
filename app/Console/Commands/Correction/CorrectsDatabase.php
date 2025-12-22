@@ -74,9 +74,11 @@ class CorrectsDatabase extends Command
             'correction:group-accounts',
             'correction:recalculates-liabilities',
             'correction:preferences',
+            'correction:corrects-inverted-budget-limits',
             // 'correction:transaction-types', // resource heavy, disabled.
             'correction:recalculate-pc-amounts',
             'correction:remove-links-to-deleted-objects',
+            'correction:clears-empty-foreign-amounts',
             'firefly-iii:report-integrity',
         ];
         foreach ($commands as $command) {
