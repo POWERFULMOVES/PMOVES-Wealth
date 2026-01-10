@@ -1,0 +1,111 @@
+# PMOVES-Wealth (Firefly III) - Hardened Architecture Docker Compose
+# Dual-mode operation: standalone (fork) or docked (PMOVES.AI integration)
+
+# Build arguments for image tag
+x-image-args: &image_args
+  FIREFLY_UPSTREAM_IMAGE: ${FIREFLY_UPSTREAM_IMAGE:-fireflyiii/core}
+  FIREFLY_UPSTREAM_TAG: ${FIREFLY_UPSTREAM_TAG:-latest}
+x-pmoves-image: &pmoves_image
+  image: ${FIREFLY_IMAGE:-ghcr.io/powerfulmoves/pmoves-wealth:pmoves-latest}
+
+services:
+  # Firefly III app
+  app:
+    <<: *pmoves_image
+    container_name: ${CONTAINER_NAME:-pmoves-wealth}
+    restart: unless-stopped
+
+    # Dual-mode networks
+    networks:
+      app_network:
+        aliases:
+          - firefly
+          - pmoves-wealth
+      pmoves_data:
+        # Optional: Only used when docked to parent PMOVES.AI
+        # Networks cannot have health conditions - this is handled by external: true + optional: true
+
+    ports:
+      - "${FIREFLY_PORT:-8080}:8080"
+
+    volumes:
+      # Firefly III upload directory
+      - firefly_upload:/var/www/html/storage/upload:rw
+      # Firefly III export directory
+      - firefly_export:/var/www/html/storage/export:rw
+
+    env_file:
+      - .env.local
+      - .env
+
+    environment:
+      # Core configuration
+      - APP_ENV=${APP_ENV:-production}
+      - APP_DEBUG=${APP_DEBUG:-false}
+      - SITE_OWNER=${SITE_OWNER:-admin@pmoves.ai}
+      # APP_KEY must be exactly 32 chars (use generate_key.sh)
+      - APP_KEY=${APP_KEY}
+      # Database configuration (standalone uses internal db)
+      - DB_CONNECTION=${DB_CONNECTION:-sqlite}
+      - DB_DATABASE=${DB_DATABASE:-/var/www/html/storage/database.sqlite}
+      # PMOVES integration mode
+      - PMOVES_MODE=${PMOVES_MODE:-standalone}
+      # TimeZone
+      - TZ=${TZ:-UTC}
+      # PMOVES observability
+      - NATS_URL=${NATS_URL:-nats://nats:4222}
+      - LOKI_URL=${LOKI_URL:-http://loki:3100}
+
+    healthcheck:
+      test: ["CMD", "curl", "-fLs", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # PostgreSQL database (optional, for production use)
+  db:
+    image: postgres:15-alpine
+    container_name: ${DB_CONTAINER_NAME:-pmoves-wealth-db}
+    restart: unless-stopped
+    networks:
+      - app_network
+
+    volumes:
+      - firefly_db:/var/lib/postgresql/data:rw
+
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-firefly}
+      - POSTGRES_USER=${POSTGRES_USER:-firefly}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - TZ=${TZ:-UTC}
+
+    profiles:
+      - postgres  # Only start with --profile postgres
+
+# Networks for dual-mode operation
+networks:
+  # Application network (always created)
+  app_network:
+    name: ${NETWORK_NAME:-pmoves_app}
+    driver: bridge
+    labels:
+      pmoves.network: "true"
+      pmoves.network.type: "app"
+
+  # Data tier network (external when docked to PMOVES.AI)
+  pmoves_data:
+    name: ${PARENT_DATA_NETWORK:-pmoves_data}
+    external: true
+
+# Named volumes for persistence
+volumes:
+  firefly_upload:
+    name: ${VOLUME_PREFIX:-firefly}_upload
+    driver: local
+  firefly_export:
+    name: ${VOLUME_PREFIX:-firefly}_export
+    driver: local
+  firefly_db:
+    name: ${VOLUME_PREFIX:-firefly}_db
+    driver: local
