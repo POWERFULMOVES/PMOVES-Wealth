@@ -778,3 +778,15 @@ Route::group(
         );
     }
 );
+
+// PMOVES.AI: Metrics endpoint for Prometheus observability
+Route::group(
+    [
+        'namespace' => 'FireflyIII\Http\Controllers\System',
+        'prefix'    => 'v1',
+        'as'        => 'api.v1.system.',
+    ],
+    static function (): void {
+        Route::get('metrics', ['uses' => 'MetricsController@index', 'as' => 'metrics']);
+    }
+);
