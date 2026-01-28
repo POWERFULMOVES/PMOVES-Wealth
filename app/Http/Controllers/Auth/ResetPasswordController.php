@@ -36,6 +36,8 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use FireflyIII\Support\Facades\FireflyConfig;
+use SensitiveParameter;
 
 /**
  * Class ResetPasswordController
@@ -96,7 +98,7 @@ class ResetPasswordController extends Controller
         // database. Otherwise, we will parse the error and return the response.
         $response = $this->broker()->reset(
             $this->credentials($request),
-            function ($user, $password): void {
+            function ($user, #[SensitiveParameter] $password): void {
                 $this->resetPassword($user, $password);
             }
         );
@@ -122,7 +124,7 @@ class ResetPasswordController extends Controller
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      */
-    public function showResetForm(Request $request, $token = null)
+    public function showResetForm(Request $request, #[SensitiveParameter] $token = null)
     {
         if ('web' !== config('firefly.authentication_guard')) {
             $message = sprintf('Cannot reset password when authenticating over "%s".', config('firefly.authentication_guard'));
@@ -131,7 +133,7 @@ class ResetPasswordController extends Controller
         }
 
         // is allowed to register?
-        $singleUserMode    = app('fireflyconfig')->get('single_user_mode', config('firefly.configuration.single_user_mode'))->data;
+        $singleUserMode    = FireflyConfig::get('single_user_mode', config('firefly.configuration.single_user_mode'))->data;
         $userCount         = User::count();
         $allowRegistration = true;
         $pageTitle         = (string) trans('firefly.reset_pw_page_title');

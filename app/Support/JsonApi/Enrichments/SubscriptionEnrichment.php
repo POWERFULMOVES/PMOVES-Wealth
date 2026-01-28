@@ -173,7 +173,7 @@ class SubscriptionEnrichment implements EnrichmentInterface
      */
     protected function lastPaidDate(Bill $subscription, Collection $dates, Carbon $default): Carbon
     {
-        $filtered = $dates->filter(fn (TransactionJournal $journal): bool => (int)$journal->bill_id === (int)$subscription->id);
+        $filtered = $dates->filter(static fn (TransactionJournal $journal): bool => (int)$journal->bill_id === (int)$subscription->id);
         Log::debug(sprintf('Filtered down from %d to %d entries for bill #%d.', $dates->count(), $filtered->count(), $subscription->id));
         if (0 === $filtered->count()) {
             return $default;
@@ -294,7 +294,7 @@ class SubscriptionEnrichment implements EnrichmentInterface
 
             // At this point the "next match" is exactly after the last time the bill was paid.
             $result                                  = [];
-            $filtered                                = $set->filter(fn (TransactionJournal $journal): bool => (int)$journal->bill_id === (int)$subscription->id);
+            $filtered                                = $set->filter(static fn (TransactionJournal $journal): bool => (int)$journal->bill_id === (int)$subscription->id);
             foreach ($filtered as $entry) {
                 $array    = [
                     'transaction_group_id'            => (string)$entry->transaction_group_id,
@@ -321,7 +321,7 @@ class SubscriptionEnrichment implements EnrichmentInterface
                     $array['foreign_currency_code']           = $entry->foreign_currency_code;
                     $array['foreign_currency_symbol']         = $entry->foreign_currency_symbol;
                     $array['foreign_currency_decimal_places'] = $entry->foreign_currency_decimal_places;
-                    $array['foreign_amount']                  = Steam::bcround($entry->foreign_amount, $entry->foreign_currency_decimal_places);
+                    $array['foreign_amount']                  = Steam::bcround((string) $entry->foreign_amount, $entry->foreign_currency_decimal_places);
                 }
                 // convert to primary, but is already primary.
                 if ($this->convertToPrimary && (int)$entry->transaction_currency_id === $this->primaryCurrency->id) {
@@ -329,7 +329,7 @@ class SubscriptionEnrichment implements EnrichmentInterface
                 }
                 // convert to primary, but is NOT already primary.
                 if ($this->convertToPrimary && (int)$entry->transaction_currency_id !== $this->primaryCurrency->id) {
-                    $array['pc_amount'] = $converter->convert($entry->transactionCurrency, $this->primaryCurrency, $entry->date, $entry->amount);
+                    $array['pc_amount'] = $converter->convert($entry->transactionCurrency, $this->primaryCurrency, $entry->date, (string) $entry->amount);
                 }
                 // convert to primary, but foreign is already primary.
                 if ($this->convertToPrimary && (int)$entry->foreign_currency_id === $this->primaryCurrency->id) {
@@ -340,7 +340,7 @@ class SubscriptionEnrichment implements EnrichmentInterface
                     // TODO this is very database intensive.
                     /** @var TransactionCurrency $foreignCurrency */
                     $foreignCurrency            = Amount::getTransactionCurrencyById($entry->foreign_currency_id);
-                    $array['pc_foreign_amount'] = $converter->convert($foreignCurrency, $this->primaryCurrency, $entry->date, $entry->amount);
+                    $array['pc_foreign_amount'] = $converter->convert($foreignCurrency, $this->primaryCurrency, $entry->date, (string) $entry->amount);
                 }
                 $result[] = $array;
             }
@@ -385,7 +385,7 @@ class SubscriptionEnrichment implements EnrichmentInterface
 
     private function filterPaidDates(array $entries): array
     {
-        return array_map(function (array $entry): array {
+        return array_map(static function (array $entry): array {
             unset($entry['date_object']);
 
             return $entry;

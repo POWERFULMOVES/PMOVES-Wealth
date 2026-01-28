@@ -23,13 +23,14 @@ declare(strict_types=1);
 
 namespace FireflyIII\Support;
 
-use FireflyIII\Support\Facades\Preferences;
 use Carbon\Carbon;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Exceptions\IntervalException;
 use FireflyIII\Helpers\Fiscal\FiscalHelperInterface;
 use FireflyIII\Support\Calendar\Calculator;
 use FireflyIII\Support\Calendar\Periodicity;
+use FireflyIII\Support\Facades\Preferences;
+use FireflyIII\Support\Facades\Steam;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -201,7 +202,6 @@ class Navigation
     public function endOfPeriod(Carbon $end, string $repeatFreq): Carbon
     {
         $currentEnd  = clone $end;
-
         // Log::debug(sprintf('Now in endOfPeriod("%s", "%s").', $currentEnd->toIso8601String(), $repeatFreq));
         if ('MTD' === $repeatFreq && $end->isFuture()) {
             // fall back to a monthly schedule if the requested period is MTD.
@@ -212,6 +212,11 @@ class Navigation
             // fall back to a yearly schedule if the requested period is YTD.
             Log::debug('endOfPeriod() requests "YTD" + future, set it to "1Y" instead.');
             $repeatFreq = '1Y';
+        }
+        if ('QTD' === $repeatFreq && $end->isFuture()) {
+            // fall back to a yearly schedule if the requested period is YTD.
+            Log::debug('endOfPeriod() requests "YTD" + future, set it to "3M" instead.');
+            $repeatFreq = '3M';
         }
 
         $functionMap = [
@@ -294,12 +299,31 @@ class Navigation
         if (null !== $result) {
             // add sanity check.
             if ($currentEnd->lt($end)) {
-                throw new FireflyException(sprintf('[d] endOfPeriod(%s, %s) failed, because it resulted in %s.', $end->toW3cString(), $repeatFreq, $currentEnd->toW3cString()));
+                switch ($repeatFreq) {
+                    case 'QTD':
+                        $currentEnd = $end->clone()->endOfQuarter()->setMilli(0);
+
+                        break;
+
+                    case 'MTD':
+                        $currentEnd = $end->clone()->endOfMonth()->setMilli(0);
+
+                        break;
+
+                    case 'YTD':
+                        $currentEnd = $end->clone()->endOfYear()->setMilli(0);
+
+                        break;
+                }
+                if ($currentEnd->lt($end)) {
+                    throw new FireflyException(sprintf('[d] endOfPeriod(%s, %s) failed, because it resulted in %s.', $end->toW3cString(), $repeatFreq, $currentEnd->toW3cString()));
+                }
             }
 
             return $result;
         }
         unset($result);
+
 
         if (!array_key_exists($repeatFreq, $functionMap)) {
             Log::error(sprintf('Cannot do endOfPeriod for $repeat_freq "%s"', $repeatFreq));
@@ -404,7 +428,7 @@ class Navigation
      */
     public function listOfPeriods(Carbon $start, Carbon $end): array
     {
-        $locale        = app('steam')->getLocale();
+        $locale        = Steam::getLocale();
         // define period to increment
         $increment     = 'addDay';
         $format        = $this->preferredCarbonFormat($start, $end);
@@ -536,7 +560,7 @@ class Navigation
      */
     public function preferredCarbonLocalizedFormat(Carbon $start, Carbon $end): string
     {
-        $locale = app('steam')->getLocale();
+        $locale = Steam::getLocale();
         $diff   = $start->diffInMonths($end, true);
         if ($diff >= 1.001 && $diff < 12.001) {
             return (string)trans('config.month_js', [], $locale);

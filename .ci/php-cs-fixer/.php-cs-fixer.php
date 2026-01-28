@@ -26,6 +26,7 @@ $paths = [
     $current . '/../../config',
     $current . '/../../routes',
     $current . '/../../tests',
+    $current . '/../../resources/lang/en_US',
 ];
 
 $finder = PhpCsFixer\Finder::create()
@@ -40,7 +41,8 @@ return $config->setRules(
 
     [
         // rule sets
-        '@PHP83Migration'               => true,
+        '@PHP8x3Migration'               => true,
+        '@PHP8x4Migration'               => true,
         '@PhpCsFixer'                   => true,
         '@PhpCsFixer:risky'             => true,
         '@PSR12'                        => true,

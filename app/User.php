@@ -24,8 +24,6 @@ declare(strict_types=1);
 
 namespace FireflyIII;
 
-use FireflyIII\Support\Facades\Preferences;
-use Illuminate\Support\Facades\Log;
 use Deprecated;
 use Exception;
 use FireflyIII\Enums\UserRoleEnum;
@@ -56,6 +54,8 @@ use FireflyIII\Models\UserRole;
 use FireflyIII\Models\Webhook;
 use FireflyIII\Notifications\Admin\UserRegistration;
 use FireflyIII\Notifications\Admin\VersionCheckResult;
+use FireflyIII\Support\Facades\FireflyConfig;
+use FireflyIII\Support\Facades\Preferences;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -65,10 +65,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Str;
 use Laravel\Passport\HasApiTokens;
 use NotificationChannels\Pushover\PushoverReceiver;
+use SensitiveParameter;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class User extends Authenticatable
@@ -76,6 +78,7 @@ class User extends Authenticatable
     use HasApiTokens;
     use Notifiable;
     use ReturnsIntegerIdTrait;
+
     protected $fillable = ['email', 'password', 'blocked', 'blocked_code', 'user_group_id'];
     protected $hidden   = ['password', 'remember_token'];
     protected $table    = 'users';
@@ -257,7 +260,12 @@ class User extends Authenticatable
         $dbRolesIds       = $dbRoles->pluck('id')->toArray();
         $dbRolesTitles    = $dbRoles->pluck('title')->toArray();
 
-        $groupMemberships = $this->groupMemberships()->whereIn('user_role_id', $dbRolesIds)->where('user_group_id', $userGroup->id)->get();
+        $groupMemberships = $this
+            ->groupMemberships()
+            ->whereIn('user_role_id', $dbRolesIds)
+            ->where('user_group_id', $userGroup->id)
+            ->get()
+        ;
         if (0 === $groupMemberships->count()) {
             Log::error(sprintf(
                 'User #%d "%s" does not have roles %s in user group #%d "%s"',
@@ -369,7 +377,7 @@ class User extends Authenticatable
 
         return match ($driver) {
             'mail'  => $email,
-            default => null,
+            default => null
         };
     }
 
@@ -403,7 +411,7 @@ class User extends Authenticatable
     public function routeNotificationForSlack(Notification $notification): ?string
     {
         // this check does not validate if the user is owner, Should be done by notification itself.
-        $res  = app('fireflyconfig')->getEncrypted('slack_webhook_url', '')->data;
+        $res  = FireflyConfig::getEncrypted('slack_webhook_url', '')->data;
         if (is_array($res)) {
             $res = '';
         }
@@ -451,7 +459,7 @@ class User extends Authenticatable
      *
      * @param string $token
      */
-    public function sendPasswordResetNotification($token): void
+    public function sendPasswordResetNotification(#[SensitiveParameter] $token): void
     {
         $ipAddress = Request::ip();
 
@@ -527,10 +535,6 @@ class User extends Authenticatable
 
     protected function casts(): array
     {
-        return [
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
-            'blocked'    => 'boolean',
-        ];
+        return ['created_at' => 'datetime', 'updated_at' => 'datetime', 'blocked'    => 'boolean'];
     }
 }

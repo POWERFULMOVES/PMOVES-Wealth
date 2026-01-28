@@ -42,14 +42,15 @@ use Illuminate\Validation\ValidationException as LaravelValidationException;
 use Laravel\Passport\Exceptions\OAuthServerException as LaravelOAuthException;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use Override;
-use Sentry\Laravel\Integration;
 use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\GoneHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
+use FireflyIII\Support\Facades\Steam;
 
 use function Safe\json_encode;
 use function Safe\parse_url;
@@ -71,6 +72,7 @@ class Handler extends ExceptionHandler
             AuthenticationException::class,
             LaravelValidationException::class,
             NotFoundHttpException::class,
+            GoneHttpException::class,
             OAuthServerException::class,
             LaravelOAuthException::class,
             TokenMismatchException::class,
@@ -83,14 +85,7 @@ class Handler extends ExceptionHandler
      * Register the exception handling callbacks for the application.
      */
     #[Override]
-    public function register(): void
-    {
-        if (true === config('firefly.report_errors_online')) {
-            $this->reportable(function (Throwable $e): void {
-                Integration::captureUnhandledException($e);
-            });
-        }
-    }
+    public function register(): void {}
 
     /**
      * Render an exception into an HTTP response. It's complex but lucky for us, we never use it because
@@ -287,7 +282,7 @@ class Handler extends ExceptionHandler
     protected function invalid($request, LaravelValidationException $exception): \Illuminate\Http\Response|JsonResponse|RedirectResponse
     {
         // protect against open redirect when submitting invalid forms.
-        $previous = app('steam')->getSafePreviousUrl();
+        $previous = Steam::getSafePreviousUrl();
         $redirect = $this->getRedirectUrl($exception);
 
         return redirect($redirect ?? $previous)

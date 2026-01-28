@@ -48,6 +48,7 @@ use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as DatabaseBuilder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use FireflyIII\Support\Facades\FireflyConfig;
 
 class CorrectsPrimaryCurrencyAmounts extends Command
 {
@@ -62,7 +63,7 @@ class CorrectsPrimaryCurrencyAmounts extends Command
      */
     public function handle(): int
     {
-        if (false === config('cer.enabled')) {
+        if (false === FireflyConfig::get('enable_exchange_rates', config('cer.enabled'))->data) {
             $this->friendlyInfo('This command will not run because currency exchange rates are disabled.');
 
             return 0;
@@ -102,7 +103,7 @@ class CorrectsPrimaryCurrencyAmounts extends Command
 
     private function recalculateAccounts(UserGroup $userGroup): void
     {
-        $set = $userGroup->accounts()->where(function (EloquentBuilder $q): void {
+        $set = $userGroup->accounts()->where(static function (EloquentBuilder $q): void {
             $q->whereNotNull('virtual_balance');
 
             // this needs a different piece of code for postgres.
@@ -225,10 +226,10 @@ class CorrectsPrimaryCurrencyAmounts extends Command
         $set                              = DB::table('transactions')
             ->join('transaction_journals', 'transaction_journals.id', '=', 'transactions.transaction_journal_id')
             ->where('transaction_journals.user_group_id', $userGroup->id)
-            ->where(function (DatabaseBuilder $q1) use ($currency): void {
-                $q1->where(function (DatabaseBuilder $q2) use ($currency): void {
+            ->where(static function (DatabaseBuilder $q1) use ($currency): void {
+                $q1->where(static function (DatabaseBuilder $q2) use ($currency): void {
                     $q2->whereNot('transactions.transaction_currency_id', $currency->id)->whereNull('transactions.foreign_currency_id');
-                })->orWhere(function (DatabaseBuilder $q3) use ($currency): void {
+                })->orWhere(static function (DatabaseBuilder $q3) use ($currency): void {
                     $q3->whereNot('transactions.transaction_currency_id', $currency->id)->whereNot('transactions.foreign_currency_id', $currency->id);
                 });
             })

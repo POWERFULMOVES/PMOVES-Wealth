@@ -3,6 +3,61 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## v6.4.16 - 2026-01-18
+
+> [!WARNING]
+> This will be one of the last Firefly III data importer releases that supports PHP 8.4.
+
+### Fixed
+- [Discussion 11431](https://github.com/orgs/firefly-iii/discussions/11431) (Settings don't get saved) started by @PVTejas
+- [Issue 11473](https://github.com/firefly-iii/firefly-iii/issues/11473) (Searching transaction with two tags_contains returns results matching only one of those) reported by @F-DXI
+- [Issue 11474](https://github.com/firefly-iii/firefly-iii/issues/11474) (Potential error in sub total computation for group in subscription) reported by @ma-clog
+- [Issue 11479](https://github.com/firefly-iii/firefly-iii/issues/11479) (Editing a user profile as admin without setting a new password causes a 500 Internal server error) reported by @watertrainer
+- [Issue 11501](https://github.com/firefly-iii/firefly-iii/issues/11501) (Schema of /api/v1/available-budgets different from spec) reported by @RadCod3
+- [Issue 11502](https://github.com/firefly-iii/firefly-iii/issues/11502) (Visual bug - Transaction notes' markdown doesn't properly render code blocks in dark mode) reported by @AyluinReymaer
+- [Discussion 11508](https://github.com/orgs/firefly-iii/discussions/11508) (Grouped Piggy banks show as ungrouped when creating a transaction) started by @AyluinReymaer
+- [Discussion 11509](https://github.com/orgs/firefly-iii/discussions/11509) (IBAN - iconv(): Wrong encoding) started by @s0fax
+- [Discussion 11524](https://github.com/orgs/firefly-iii/discussions/11524) (Can items in dropdowns (specifically categories) be sorted alphabetically?) started by @mvpaderin
+- [Issue 11531](https://github.com/firefly-iii/firefly-iii/issues/11531) (Performance: updateRunningBalance executes even when use_running_balance is disabled, causing timeouts on Mass Edits) reported by @maxime-killinger
+
+### Changed
+- Rules that delete a transaction will no longer throws a 500, but a 410.
+
+## v6.4.15 - 2026-01-07
+
+### Added
+
+- [Issue 11264](https://github.com/firefly-iii/firefly-iii/issues/11264) (Add GUI for some settings, replacing environment variables) reported by @jacobburrell
+- [Discussion 11433](https://github.com/orgs/firefly-iii/discussions/11433) (Updates to Date Range selection) started by @fett327
+
+### Changed
+
+- Moved some settings to your system settings
+
+### Removed
+
+- The following environment variables are removed and will no longer work. They are now in your settings.
+  - `ENABLE_EXTERNAL_MAP`
+  - `ENABLE_EXCHANGE_RATES`
+  - `ENABLE_EXTERNAL_RATES`
+  - `VALID_URL_PROTOCOLS`
+  - `ALLOW_WEBHOOKS`
+  - `USE_RUNNING_BALANCE`
+- Removed sentry.io code
+
+### Fixed
+
+- [Issue 11378](https://github.com/firefly-iii/firefly-iii/issues/11378) (Wrong account balance with initial transfer from different currency) reported by @bozho
+- [Issue 11383](https://github.com/firefly-iii/firefly-iii/issues/11383) (Login flow could redirect to javascript path) reported by @stefvonb
+- [Issue 11388](https://github.com/firefly-iii/firefly-iii/issues/11388) (TypeError bugs during upgrade to 6.4.14 + account_balances corruption) reported by @jaconde2
+- [Issue 11396](https://github.com/firefly-iii/firefly-iii/issues/11396) (Reconciliation adds extra digits) reported by @niklas2810
+- [Issue 11399](https://github.com/firefly-iii/firefly-iii/issues/11399) (Unusual behavior in audit logs (multi-currency)) reported by @jgmm81
+- [Issue 11403](https://github.com/firefly-iii/firefly-iii/issues/11403) (Error 404 when trying to view the details (Piggy banks section)) reported by @jgmm81
+- [Issue 11410](https://github.com/firefly-iii/firefly-iii/issues/11410) (nitpick: Bulk edit tags should keep the option chosen instead of always changing back to "replace") reported by @jxtxzzw
+- [Issue 11443](https://github.com/firefly-iii/firefly-iii/issues/11443) (Exception thrown, when subscription is in foreign currency) reported by @ajgon
+- [Issue 11445](https://github.com/firefly-iii/firefly-iii/issues/11445) (“Reconcile” screen breaks when Preferences → Layout is set to “Year to date”) reported by @semonsir
+- [Issue 11449](https://github.com/firefly-iii/firefly-iii/issues/11449) (Non-strict rules break with "Apply rule" and "Apply rule group") reported by @Bytenka
+
 ## v6.4.14 - 2025-12-17
 
 ### Fixed
