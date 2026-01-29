@@ -26,11 +26,19 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
+            # latest tag for the default branch (PMOVES.AI-Edition-Hardened)
             type=raw,value=latest,enable={{is_default_branch}}
+            # pmoves-latest for PMOVES.AI-Edition-Hardened branch
             type=raw,value=pmoves-latest,enable=${{ github.ref == 'refs/heads/PMOVES.AI-Edition-Hardened' }}
+            # main tag for main branch (upstream sync branch)
             type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
-            type=sha,prefix=
-            type=ref,event=tag
+            # branch-specific tags (e.g., PMOVES.AI-Edition-Hardened, main)
+            type=ref,event=branch
+            # short SHA tag for both branches
+            type=sha
+            # version tags for releases (v*.*.*)
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
       - uses: docker/build-push-action@v6
         with:
           context: .
