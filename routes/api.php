@@ -778,3 +778,16 @@ Route::group(
         );
     }
 );
+
+// PMOVES.AI: Observability endpoints for Prometheus monitoring
+Route::group(
+    [
+        'namespace' => 'FireflyIII\Http\Controllers\System',
+        'prefix'    => 'v1',
+        'as'        => 'api.v1.system.',
+    ],
+    static function (): void {
+        Route::get('healthz', ['uses' => 'HealthcheckController@check', 'as' => 'healthz']);
+        Route::get('metrics', ['uses' => 'MetricsController@index', 'as' => 'metrics']);
+    }
+);

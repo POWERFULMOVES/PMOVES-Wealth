@@ -85,6 +85,8 @@ Route::group(
     static function (): void {
         // Route::get('offline', static fn () => view('errors.offline'));
         Route::get('health', ['uses' => 'HealthcheckController@check', 'as' => 'healthcheck']);
+        // PMOVES.AI: Standard healthz endpoint for observability
+        Route::get('healthz', ['uses' => 'HealthcheckController@check', 'as' => 'healthz']);
     }
 );
 
