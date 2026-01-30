@@ -17,6 +17,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      RELEASE_VERSION: ${{ github.event_name == 'schedule' && 'develop' || inputs.version }}
+      PHP_VERSION: ${{ github.event_name == 'schedule' && '8.4' || inputs.phpversion }}
+      HAS_GPG: ${{ secrets.GPG_PRIVATE_KEY != '' && secrets.PASSPHRASE != '' }}
     steps:
       - name: Validate input
         run: |
@@ -27,22 +31,32 @@ jobs:
             exit 1
           fi
         env:
-          version: ${{ github.event_name == 'schedule' && 'develop' || inputs.version }}
+          version: ${{ env.RELEASE_VERSION }}
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Import GPG key
+      - name: Import GPG key (optional)
+        if: env.HAS_GPG == 'true'
         uses: crazy-max/ghaction-import-gpg@v6
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
           git_user_signingkey: true
           git_commit_gpgsign: true
+      - name: Configure release signing behavior
+        run: |
+          if [ "${HAS_GPG}" = "true" ]; then
+            echo "RELEASE_VERIFY_TAG_ARGS=--verify-tag" >> "$GITHUB_ENV"
+            echo "GPG signing enabled."
+          else
+            echo "RELEASE_VERIFY_TAG_ARGS=" >> "$GITHUB_ENV"
+            echo "::warning::GPG signing secrets (GPG_PRIVATE_KEY/PASSPHRASE) are not configured; skipping .asc signatures and tag verification."
+          fi
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ github.event.inputs.phpversion || '8.4' }}
+          php-version: ${{ env.PHP_VERSION }}
           extensions: mbstring, intl, zip, bcmath
       - name: Switch and pull
         run: |
@@ -68,7 +82,7 @@ jobs:
           git pull
           echo "Current branch is $(git branch --show-current)"
         env:
-          version: ${{ github.event_name == 'schedule' && 'develop' || inputs.version }}
+          version: ${{ env.RELEASE_VERSION }}
       - name: Configure Git
         run: |
           # do some configuration
@@ -136,7 +150,7 @@ jobs:
         env:
           FIREFLY_III_ROOT: /github/workspace
           GH_TOKEN: ""
-          FF_III_VERSION: ${{ github.event_name == 'schedule' && 'develop' || inputs.version }}
+          FF_III_VERSION: ${{ env.RELEASE_VERSION }}
       - name: Generate JSON v1
         id: json-v1
         uses: JC5/firefly-iii-dev@main
@@ -243,7 +257,7 @@ jobs:
           echo "tarName=$tarName" >> "$GITHUB_ENV"
           echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
         env:
-          version: ${{ github.event_name == 'schedule' && 'develop' || inputs.version }}
+          version: ${{ env.RELEASE_VERSION }}
       - name: Commit all changes
         run: |
           # add all content, except output.txt (this contains the changelog and/or the download instructions)
@@ -254,12 +268,12 @@ jobs:
           git commit -m "🤖 Auto commit for release '$version' on $(date +'%Y-%m-%d')" || true
           git push
         env:
-          version: ${{ github.event_name == 'schedule' && 'develop' || inputs.version }}
+          version: ${{ env.RELEASE_VERSION }}
       - name: Generate release description
         id: release-description
         uses: JC5/firefly-iii-dev@main
         with:
-          action: "ff3:generate-release-notes firefly-iii ${{ inputs.version || 'develop' }}"
+          action: "ff3:generate-release-notes firefly-iii ${{ env.RELEASE_VERSION }}"
           output: 'output'
         env:
           FIREFLY_III_ROOT: /github/workspace
@@ -313,7 +327,7 @@ jobs:
           echo "DONE!"
         env:
           GH_TOKEN: ${{ github.token }}
-          version: ${{ github.event_name == 'schedule' && 'develop' || inputs.version }}
+          version: ${{ env.RELEASE_VERSION }}
       - name: Create archives
         run: |
           echo "Create zip file $zipName"
@@ -327,7 +341,9 @@ jobs:
           sha256sum -b $zipName > $zipName.sha256
           sha256sum -b $tarName > $tarName.sha256
 
-          # add signatures:
+      - name: Sign archives (optional)
+        if: env.HAS_GPG == 'true'
+        run: |
           gpg --armor --detach-sign $zipName
           gpg --armor --detach-sign $tarName
       - name: Create release
@@ -345,7 +361,7 @@ jobs:
             git tag -a $releaseName -m "🤖 Development release '$version' on $(date +'%Y-%m-%d')"
             git push origin $releaseName
 
-            gh release create $releaseName -p --verify-tag \
+            gh release create $releaseName -p ${RELEASE_VERIFY_TAG_ARGS} \
               -t "Development release for $(date +'%Y-%m-%d')" \
               --latest=false \
               -F output.txt
@@ -365,7 +381,7 @@ jobs:
             git tag -a $releaseName -m "Branch release '$version' on $(date +'%Y-%m-%d')"
             git push origin $releaseName
 
-            gh release create $releaseName -p --verify-tag \
+            gh release create $releaseName -p ${RELEASE_VERIFY_TAG_ARGS} \
               -t "Branch release for $(date +'%Y-%m-%d')" \
               --latest=false \
               -F output.txt
@@ -386,18 +402,18 @@ jobs:
             # do not tag as latest when alpha or beta.
             if [[ "$version" == *alpha* ]] || [[ "$version" == *beta* ]]; then
               echo 'Mark alpha or beta as NOT the latest.'
-              gh release create $releaseName -F output.txt -t "$releaseName" --verify-tag --latest=false
+              gh release create $releaseName -F output.txt -t "$releaseName" ${RELEASE_VERIFY_TAG_ARGS} --latest=false
             fi
 
             # tag as latest when NOT alpha or beta.
             if [[ "$version" != *alpha* ]] && [[ "$version" != *beta* ]]; then
               echo 'Mark prod as the latest.'
-              gh release create $releaseName -F output.txt -t "$releaseName" --verify-tag --latest=true
+              gh release create $releaseName -F output.txt -t "$releaseName" ${RELEASE_VERIFY_TAG_ARGS} --latest=true
             fi
           fi
         env:
           GH_TOKEN: ${{ github.token }}
-          version: ${{ github.event_name == 'schedule' && 'develop' || inputs.version }}
+          version: ${{ env.RELEASE_VERSION }}
       - name: Upload artifacts
         run: |
           # add zip file to release.
@@ -412,11 +428,15 @@ jobs:
           echo "Upload $tarName.sha256 to $releaseName"
           gh release upload $releaseName $tarName.sha256
 
-          # add signatures to release
-          echo "Upload $zipName.asc to $releaseName"
-          gh release upload $releaseName $zipName.asc
-          echo "Upload $tarName.asc to $releaseName"
-          gh release upload $releaseName $tarName.asc
+          # add signatures to release (optional)
+          if [ "${HAS_GPG}" = "true" ]; then
+            echo "Upload $zipName.asc to $releaseName"
+            gh release upload $releaseName $zipName.asc
+            echo "Upload $tarName.asc to $releaseName"
+            gh release upload $releaseName $tarName.asc
+          else
+            echo "Skipping signature upload (.asc) because HAS_GPG=false"
+          fi
 
           # get current HEAD and add as file to the release
           HEAD=$(git rev-parse HEAD)
@@ -433,4 +453,4 @@ jobs:
           rm -f $tarName.sha256
         env:
           GH_TOKEN: ${{ github.token }}
-          version: ${{ github.event_name == 'schedule' && 'develop' || inputs.version }}
+          version: ${{ env.RELEASE_VERSION }}
