@@ -24,18 +24,18 @@ declare(strict_types=1);
 
 namespace FireflyIII\Services\Internal\Update;
 
-use FireflyIII\Support\Facades\Preferences;
-use Illuminate\Support\Facades\Log;
 use FireflyIII\Enums\AccountTypeEnum;
-use FireflyIII\Events\UpdatedAccount;
+use FireflyIII\Events\Model\Account\UpdatedExistingAccount;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Account;
 use FireflyIII\Models\AccountType;
 use FireflyIII\Models\Location;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Services\Internal\Support\AccountServiceTrait;
-use FireflyIII\User;
+use FireflyIII\Support\Facades\Preferences;
 use FireflyIII\Support\Facades\Steam;
+use FireflyIII\User;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class AccountUpdateService
@@ -46,11 +46,11 @@ class AccountUpdateService
     use AccountServiceTrait;
 
     protected AccountRepositoryInterface $accountRepository;
-    protected array                      $validAssetFields;
-    protected array                      $validCCFields;
-    protected array                      $validFields;
-    private array                        $canHaveOpeningBalance;
-    private User                         $user;
+    protected array $validAssetFields;
+    protected array $validCCFields;
+    protected array $validFields;
+    private array $canHaveOpeningBalance;
+    private User $user;
 
     /**
      * Constructor.
@@ -64,6 +64,11 @@ class AccountUpdateService
         $this->accountRepository     = app(AccountRepositoryInterface::class);
     }
 
+    public function setUser(User $user): void
+    {
+        $this->user = $user;
+    }
+
     /**
      * Update account data.
      *
@@ -73,9 +78,11 @@ class AccountUpdateService
     {
         Log::debug(sprintf('Now in %s', __METHOD__));
         $this->accountRepository->setUser($account->user);
-        $this->user = $account->user;
-        $account    = $this->updateAccount($account, $data);
-        $account    = $this->updateAccountOrder($account, $data);
+        $this->user                = $account->user;
+        $oldData                   = $account->toArray();
+        $oldData['account_number'] = $this->accountRepository->getMetaValue($account, 'account_number');
+        $account                   = $this->updateAccount($account, $data);
+        $account                   = $this->updateAccountOrder($account, $data);
 
         // find currency, or use default currency instead.
         if (array_key_exists('currency_id', $data) || array_key_exists('currency_code', $data)) {
@@ -104,14 +111,94 @@ class AccountUpdateService
         // update preferences if inactive:
         $this->updatePreferences($account);
 
-        event(new UpdatedAccount($account));
+        event(new UpdatedExistingAccount($account, $oldData));
 
         return $account;
     }
 
-    public function setUser(User $user): void
+    public function updateAccountOrder(Account $account, array $data): Account
     {
-        $this->user = $user;
+        // skip if no order info
+        if (!array_key_exists('order', $data) || $data['order'] === $account->order) {
+            Log::debug(sprintf('Account order will not be touched because its not set or already at %d.', $account->order));
+
+            return $account;
+        }
+        // skip if not of orderable type.
+        $type           = $account->accountType->type;
+        if (!in_array(
+            $type,
+            [AccountTypeEnum::ASSET->value, AccountTypeEnum::MORTGAGE->value, AccountTypeEnum::LOAN->value, AccountTypeEnum::DEBT->value],
+            true
+        )) {
+            Log::debug('Will not change order of this account.');
+
+            return $account;
+        }
+        // get account type ID's because a join and an update is hard:
+        $oldOrder       = $account->order;
+        $newOrder       = $data['order'];
+        Log::debug(sprintf('Order is set to be updated from %s to %s', $oldOrder, $newOrder));
+        $list           = $this->getTypeIds([AccountTypeEnum::MORTGAGE->value, AccountTypeEnum::LOAN->value, AccountTypeEnum::DEBT->value]);
+        if (AccountTypeEnum::ASSET->value === $type) {
+            $list = $this->getTypeIds([AccountTypeEnum::ASSET->value]);
+        }
+
+        if ($newOrder > $oldOrder) {
+            $this->user
+                ->accounts()
+                ->where('accounts.order', '<=', $newOrder)
+                ->where('accounts.order', '>', $oldOrder)
+                ->where('accounts.id', '!=', $account->id)
+                ->whereIn('accounts.account_type_id', $list)
+                ->decrement('order')
+            ;
+            $account->order = $newOrder;
+            Log::debug(sprintf('Order of account #%d ("%s") is now %d', $account->id, $account->name, $newOrder));
+            $account->save();
+
+            return $account;
+        }
+
+        $this->user
+            ->accounts()
+            ->where('accounts.order', '>=', $newOrder)
+            ->where('accounts.order', '<', $oldOrder)
+            ->where('accounts.id', '!=', $account->id)
+            ->whereIn('accounts.account_type_id', $list)
+            ->increment('order')
+        ;
+        $account->order = $newOrder;
+        Log::debug(sprintf('Order of account #%d ("%s") is now %d', $account->id, $account->name, $newOrder));
+        $account->save();
+
+        return $account;
+    }
+
+    private function getAccountType(string $type): AccountType
+    {
+        return AccountType::whereType(ucfirst($type))->first();
+    }
+
+    private function getTypeIds(array $array): array
+    {
+        $return = [];
+
+        /** @var string $type */
+        foreach ($array as $type) {
+            /** @var AccountType $type */
+            $type     = AccountType::whereType($type)->first();
+            $return[] = $type->id;
+        }
+
+        return $return;
+    }
+
+    private function isLiability(Account $account): bool
+    {
+        $type = $account->accountType->type;
+
+        return in_array($type, [AccountTypeEnum::DEBT->value, AccountTypeEnum::LOAN->value, AccountTypeEnum::MORTGAGE->value], true);
     }
 
     private function updateAccount(Account $account, array $data): Account
@@ -151,81 +238,6 @@ class AccountUpdateService
         $account->save();
 
         return $account;
-    }
-
-    private function isLiability(Account $account): bool
-    {
-        $type = $account->accountType->type;
-
-        return in_array($type, [AccountTypeEnum::DEBT->value, AccountTypeEnum::LOAN->value, AccountTypeEnum::MORTGAGE->value], true);
-    }
-
-    private function getAccountType(string $type): AccountType
-    {
-        return AccountType::whereType(ucfirst($type))->first();
-    }
-
-    public function updateAccountOrder(Account $account, array $data): Account
-    {
-        // skip if no order info
-        if (!array_key_exists('order', $data) || $data['order'] === $account->order) {
-            Log::debug(sprintf('Account order will not be touched because its not set or already at %d.', $account->order));
-
-            return $account;
-        }
-        // skip if not of orderable type.
-        $type           = $account->accountType->type;
-        if (!in_array($type, [AccountTypeEnum::ASSET->value, AccountTypeEnum::MORTGAGE->value, AccountTypeEnum::LOAN->value, AccountTypeEnum::DEBT->value], true)) {
-            Log::debug('Will not change order of this account.');
-
-            return $account;
-        }
-        // get account type ID's because a join and an update is hard:
-        $oldOrder       = $account->order;
-        $newOrder       = $data['order'];
-        Log::debug(sprintf('Order is set to be updated from %s to %s', $oldOrder, $newOrder));
-        $list           = $this->getTypeIds([AccountTypeEnum::MORTGAGE->value, AccountTypeEnum::LOAN->value, AccountTypeEnum::DEBT->value]);
-        if (AccountTypeEnum::ASSET->value === $type) {
-            $list = $this->getTypeIds([AccountTypeEnum::ASSET->value]);
-        }
-
-        if ($newOrder > $oldOrder) {
-            $this->user->accounts()->where('accounts.order', '<=', $newOrder)->where('accounts.order', '>', $oldOrder)
-                ->where('accounts.id', '!=', $account->id)
-                ->whereIn('accounts.account_type_id', $list)
-                ->decrement('order')
-            ;
-            $account->order = $newOrder;
-            Log::debug(sprintf('Order of account #%d ("%s") is now %d', $account->id, $account->name, $newOrder));
-            $account->save();
-
-            return $account;
-        }
-
-        $this->user->accounts()->where('accounts.order', '>=', $newOrder)->where('accounts.order', '<', $oldOrder)
-            ->where('accounts.id', '!=', $account->id)
-            ->whereIn('accounts.account_type_id', $list)
-            ->increment('order')
-        ;
-        $account->order = $newOrder;
-        Log::debug(sprintf('Order of account #%d ("%s") is now %d', $account->id, $account->name, $newOrder));
-        $account->save();
-
-        return $account;
-    }
-
-    private function getTypeIds(array $array): array
-    {
-        $return = [];
-
-        /** @var string $type */
-        foreach ($array as $type) {
-            /** @var AccountType $type */
-            $type     = AccountType::whereType($type)->first();
-            $return[] = $type->id;
-        }
-
-        return $return;
     }
 
     private function updateLocation(Account $account, array $data): void
@@ -270,9 +282,7 @@ class AccountUpdateService
 
                 // if liability, make sure the amount is positive for a credit, and negative for a debit.
                 if ($this->isLiability($account)) {
-                    $openingBalance = 'credit' === $data['liability_direction'] ? Steam::positive($openingBalance) : Steam::negative(
-                        $openingBalance
-                    );
+                    $openingBalance = 'credit' === $data['liability_direction'] ? Steam::positive($openingBalance) : Steam::negative($openingBalance);
                 }
                 $this->updateOBGroupV2($account, $openingBalance, $openingBalanceDate);
             }

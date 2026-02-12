@@ -24,10 +24,10 @@ declare(strict_types=1);
 
 namespace FireflyIII\Support\Request;
 
-use Illuminate\Support\Facades\Log;
 use FireflyIII\Enums\UserRoleEnum;
 use FireflyIII\Models\UserGroup;
 use FireflyIII\User;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Trait ChecksLogin
@@ -39,14 +39,14 @@ trait ChecksLogin
      */
     public function authorize(): bool
     {
-        Log::debug(sprintf('Now in %s', __METHOD__));
+        // Log::debug(sprintf('Now in %s', __METHOD__));
         // Only allow logged-in users
         $check     = auth()->check();
         if (!$check) {
             return false;
         }
         if (!property_exists($this, 'acceptedRoles')) { // @phpstan-ignore-line
-            Log::debug('Request class has no acceptedRoles array');
+            Log::debug(sprintf('Request class %s has no acceptedRoles array', static::class));
 
             return true; // check for false already took place.
         }
@@ -81,16 +81,16 @@ trait ChecksLogin
     {
         /** @var User $user */
         $user      = auth()->user();
-        Log::debug('Now in getUserGroup()');
+        // Log::debug('Now in getUserGroup()');
 
         /** @var null|UserGroup $userGroup */
         $userGroup = $this->route()?->parameter('userGroup');
         if (null === $userGroup) {
-            Log::debug('Request class has no userGroup parameter, but perhaps there is a parameter.');
-            $userGroupId = (int)$this->get('user_group_id');
+            // Log::debug('Request class has no userGroup parameter, but perhaps there is a parameter.');
+            $userGroupId = (int) $this->get('user_group_id');
             if (0 === $userGroupId) {
-                Log::debug(sprintf('Request class has no user_group_id parameter, grab default from user (group #%d).', $user->user_group_id));
-                $userGroupId = (int)$user->user_group_id;
+                // Log::debug(sprintf('Request class has no user_group_id parameter, grab default from user (group #%d).', $user->user_group_id));
+                $userGroupId = (int) $user->user_group_id;
             }
             $userGroup   = UserGroup::find($userGroupId);
             if (null === $userGroup) {
@@ -98,7 +98,8 @@ trait ChecksLogin
 
                 return null;
             }
-            Log::debug('Request class has valid user_group_id.');
+
+            // Log::debug('Request class has valid user_group_id.');
         }
 
         return $userGroup;
