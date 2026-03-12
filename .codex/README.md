@@ -9,8 +9,8 @@ Codex entrypoint for PMOVES financial workflows (renamed from PMOVES-Firefly-iii
 2. Review PMOVES operator docs:
    - `../pmoves/docs/AGENTS/CODEX_OPERATOR_HOME.md`
 3. Validate finance service paths used by PMOVES:
-   - `curl http://localhost:8082/health`
-   - `curl http://localhost:8082/api/v1/about`
+   - `curl http://localhost:8075/health`
+   - `curl http://localhost:8075/api/v1/about`
 
 ## PMOVES alignment
 

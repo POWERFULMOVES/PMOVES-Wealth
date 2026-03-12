@@ -4,7 +4,7 @@ services:
     image: ghcr.io/POWERFULMOVES/pmoves-firefly-iii:main
     restart: unless-stopped
     networks: [pmoves-net]
-    ports: ["8080:8080"]
+    ports: ["${FIREFLY_PORT:-8075}:8080"]
 networks:
   pmoves-net:
     external: true
