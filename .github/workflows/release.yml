@@ -185,7 +185,7 @@ jobs:
           npm run build --workspace=v2
           npm update
       - name: Setup Mago
-        uses: nhedger/setup-mago@v1
+        uses: nhedger/setup-mago@v2
       - name: Run CI
         run: |
           rm -rf vendor composer.lock
