@@ -104,7 +104,7 @@ class Navigation
 
             // make sure we don't go overboard
             if ($workEnd->gt($start)) {
-                $periods[] = ['start'  => clone $workStart, 'end'    => clone $workEnd, 'period' => $range];
+                $periods[] = ['start' => clone $workStart, 'end' => clone $workEnd, 'period' => $range];
             }
             // skip to the next period:
             $workStart->subDay()->startOfDay();
@@ -120,7 +120,7 @@ class Navigation
 
                 // make sure we don't go overboard
                 if ($workEnd->gt($start)) {
-                    $periods[] = ['start'  => clone $workStart, 'end'    => clone $workEnd, 'period' => '1Y'];
+                    $periods[] = ['start' => clone $workStart, 'end' => clone $workEnd, 'period' => '1Y'];
                 }
                 // skip to the next period:
                 $workStart->subDay()->startOfDay();
@@ -156,7 +156,7 @@ class Navigation
         }
         $func      = $map[$period];
         // first do the diff
-        $floatDiff = $beginning->{$func}($end, true); // @phpstan-ignore-line
+        $floatDiff = $beginning->{$func}($end, true);
 
         // then correct for quarterly or half-year
         if ('quarterly' === $period) {
@@ -201,27 +201,27 @@ class Navigation
             Log::debug('endOfPeriod() requests "YTD" + future, set it to "3M" instead.');
             $repeatFreq = '3M';
         }
-
+        $new         = Carbon::now();
         $functionMap = [
             '1D'        => 'endOfDay',
             'daily'     => 'endOfDay',
-            '1W'        => 'addWeek',
-            'week'      => 'addWeek',
-            'weekly'    => 'addWeek',
-            '1M'        => 'addMonth',
-            'month'     => 'addMonth',
-            'monthly'   => 'addMonth',
-            '3M'        => 'addQuarter',
-            'quarter'   => 'addQuarter',
-            'quarterly' => 'addQuarter',
+            '1W'        => 'addWeeks',
+            'week'      => 'addWeeks',
+            'weekly'    => 'addWeeks',
+            '1M'        => 'addMonths',
+            'month'     => 'addMonths',
+            'monthly'   => 'addMonths',
+            '3M'        => 'addQuarters',
+            'quarter'   => 'addQuarters',
+            'quarterly' => 'addQuarters',
             '6M'        => 'addMonths',
             'half-year' => 'addMonths',
             'half_year' => 'addMonths',
-            'year'      => 'addYear',
-            'yearly'    => 'addYear',
-            '1Y'        => 'addYear',
+            'year'      => 'addYears',
+            'yearly'    => 'addYears',
+            '1Y'        => 'addYears',
         ];
-        $modifierMap = ['half-year' => 6, 'half_year' => 6, '6M'        => 6];
+        $modifierMap = ['half-year' => 6, 'half_year' => 6, '6M' => 6];
         $subDay      = ['week', 'weekly', '1W', 'month', 'monthly', '1M', '3M', 'quarter', 'quarterly', '6M', 'half-year', 'half_year', '1Y', 'year', 'yearly'];
 
         if ('custom' === $repeatFreq) {
@@ -345,7 +345,7 @@ class Navigation
         $function    = $functionMap[$repeatFreq];
 
         if (array_key_exists($repeatFreq, $modifierMap)) {
-            $currentEnd->{$function}($modifierMap[$repeatFreq])->milli(0); // @phpstan-ignore-line
+            $currentEnd->{$function}($modifierMap[$repeatFreq])->milli(0);
             if (in_array($repeatFreq, $subDay, true)) {
                 $currentEnd->subDay();
             }
@@ -363,7 +363,7 @@ class Navigation
 
             return $currentEnd;
         }
-        $currentEnd->{$function}(); // @phpstan-ignore-line
+        $currentEnd->{$function}();
         $currentEnd->endOfDay()->milli(0);
         if (in_array($repeatFreq, $subDay, true)) {
             $currentEnd->subDay();
@@ -406,7 +406,7 @@ class Navigation
 
         if (array_key_exists($repeatFreq, $functionMap)) {
             $function = $functionMap[$repeatFreq];
-            $currentEnd->{$function}(); // @phpstan-ignore-line
+            $currentEnd->{$function}();
         }
 
         if ($maxDate instanceof Carbon && $currentEnd > $maxDate) {
@@ -432,11 +432,11 @@ class Navigation
         }
 
         return match ($range) {
-            'last7' => '1W',
-            'last30', 'MTD' => '1M',
-            'last90', 'QTD' => '3M',
+            'last7'          => '1W',
+            'last30', 'MTD'  => '1M',
+            'last90', 'QTD'  => '3M',
             'last365', 'YTD' => '1Y',
-            default => $range
+            default          => $range
         };
     }
 
@@ -453,7 +453,7 @@ class Navigation
         $diff          = $start->diffInMonths($end, true);
         // increment by month (for year)
         if ($diff >= 1.0001 && $diff < 12.001) {
-            $increment     = 'addMonth';
+            $increment     = 'addMonthsNoOverflow';
             $displayFormat = (string) trans('config.month_js');
         }
 
@@ -464,12 +464,15 @@ class Navigation
         }
         $begin         = clone $start;
         $entries       = [];
+        Log::debug(sprintf('listOfPeriods start of loop (end: %s).', $end->format('Y-m-d H:i:s')));
         while ($begin < $end) {
+            Log::debug(sprintf('Begin is now %s.', $begin->format('Y-m-d H:i:s')));
             $formatted           = $begin->format($format);
             $displayed           = $begin->isoFormat($displayFormat);
             $entries[$formatted] = $displayed;
-            $begin->{$increment}(); // @phpstan-ignore-line
+            $begin->{$increment}();
         }
+        Log::debug('listOfPeriods end of loop.');
 
         return $entries;
     }
@@ -562,12 +565,12 @@ class Navigation
     public function preferredCarbonFormatByPeriod(string $period): string
     {
         return match ($period) {
-            default => 'Y-m-d',
+            default    => 'Y-m-d',
             // '1D'    => 'Y-m-d',
-            '1W'    => '\WW,Y',
-            '1M'    => 'Y-m',
+            '1W'       => '\WW,Y',
+            '1M'       => 'Y-m',
             '3M', '6M' => '\QQ,Y',
-            '1Y'    => 'Y'
+            '1Y'       => 'Y'
         };
     }
 
@@ -674,13 +677,13 @@ class Navigation
             //            Log::debug(sprintf('Function is ->%s()', $function));
             if (array_key_exists($function, $parameterMap)) {
                 //                Log::debug(sprintf('Parameter map, function becomes ->%s(%s)', $function, implode(', ', $parameterMap[$function])));
-                $date->{$function}($parameterMap[$function][0]); // @phpstan-ignore-line
+                $date->{$function}($parameterMap[$function][0]);
                 //                Log::debug(sprintf('Result is "%s"', $date->toIso8601String()));
 
                 return $date;
             }
 
-            $date->{$function}(); // @phpstan-ignore-line
+            $date->{$function}();
             //            Log::debug(sprintf('Result is "%s"', $date->toIso8601String()));
 
             return $date;
@@ -741,10 +744,10 @@ class Navigation
             '1Y'      => 'subYears',
             'yearly'  => 'subYears',
         ];
-        $modifierMap = ['quarter'   => 3, '3M'        => 3, 'quarterly' => 3, 'half-year' => 6, '6M'        => 6];
+        $modifierMap = ['quarter' => 3, '3M' => 3, 'quarterly' => 3, 'half-year' => 6, '6M' => 6];
         if (array_key_exists($repeatFreq, $functionMap)) {
             $function = $functionMap[$repeatFreq];
-            $date->{$function}($subtract); // @phpstan-ignore-line
+            $date->{$function}($subtract);
 
             return $date;
         }
@@ -818,12 +821,12 @@ class Navigation
     public function updateEndDate(string $range, Carbon $start): Carbon
     {
         Log::debug(sprintf('updateEndDate("%s", "%s")', $range, $start->format('Y-m-d')));
-        $functionMap = ['1D'     => 'endOfDay', '1W'     => 'endOfWeek', '1M'     => 'endOfMonth', '3M'     => 'lastOfQuarter', 'custom' => 'startOfMonth']; // this only happens in test situations.
+        $functionMap = ['1D' => 'endOfDay', '1W' => 'endOfWeek', '1M' => 'endOfMonth', '3M' => 'lastOfQuarter', 'custom' => 'startOfMonth']; // this only happens in test situations.
         $end         = clone $start;
 
         if (array_key_exists($range, $functionMap)) {
             $function = $functionMap[$range];
-            $end->{$function}(); // @phpstan-ignore-line
+            $end->{$function}();
 
             Log::debug(sprintf('updateEndDate returns "%s"', $end->format('Y-m-d')));
 
@@ -874,7 +877,7 @@ class Navigation
         ];
         if (array_key_exists($range, $functionMap)) {
             $function = $functionMap[$range];
-            $start->{$function}(); // @phpstan-ignore-line
+            $start->{$function}();
             Log::debug(sprintf('updateStartDate returns "%s"', $start->format('Y-m-d')));
 
             return $start;

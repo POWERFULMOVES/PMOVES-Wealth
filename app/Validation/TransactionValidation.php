@@ -279,7 +279,7 @@ trait TransactionValidation
         $sourceName        = array_key_exists('source_name', $transaction) ? (string) $transaction['source_name'] : null;
         $sourceIban        = array_key_exists('source_iban', $transaction) ? (string) $transaction['source_iban'] : null;
         $sourceNumber      = array_key_exists('source_number', $transaction) ? (string) $transaction['source_number'] : null;
-        $source            = ['id'     => $sourceId, 'name'   => $sourceName, 'iban'   => $sourceIban, 'number' => $sourceNumber];
+        $source            = ['id' => $sourceId, 'name' => $sourceName, 'iban' => $sourceIban, 'number' => $sourceNumber];
         $validSource       = $accountValidator->validateSource($source);
 
         // do something with result:
@@ -294,7 +294,7 @@ trait TransactionValidation
         $destinationName   = array_key_exists('destination_name', $transaction) ? (string) $transaction['destination_name'] : null;
         $destinationIban   = array_key_exists('destination_iban', $transaction) ? (string) $transaction['destination_iban'] : null;
         $destinationNumber = array_key_exists('destination_number', $transaction) ? (string) $transaction['destination_number'] : null;
-        $destination       = ['id'     => $destinationId, 'name'   => $destinationName, 'iban'   => $destinationIban, 'number' => $destinationNumber];
+        $destination       = ['id' => $destinationId, 'name' => $destinationName, 'iban' => $destinationIban, 'number' => $destinationNumber];
         $validDestination  = $accountValidator->validateDestination($destination);
         // do something with result:
         if (false === $validDestination) {
@@ -395,7 +395,7 @@ trait TransactionValidation
             $destinationName   = $transaction['destination_name'] ?? null;
             $destinationIban   = $transaction['destination_iban'] ?? null;
             $destinationNumber = $transaction['destination_number'] ?? null;
-            $array             = ['id'     => $destinationId, 'name'   => $destinationName, 'iban'   => $destinationIban, 'number' => $destinationNumber];
+            $array             = ['id' => $destinationId, 'name' => $destinationName, 'iban' => $destinationIban, 'number' => $destinationNumber];
             $validDestination  = $accountValidator->validateDestination($array);
             // do something with result:
             if (false === $validDestination) {
@@ -489,28 +489,20 @@ trait TransactionValidation
 
     private function getOriginalData(int $journalId): array
     {
-        $return      = ['source_id'        => 0, 'source_name'      => '', 'destination_id'   => 0, 'destination_name' => ''];
+        $return      = ['source_id' => 0, 'source_name' => '', 'destination_id' => 0, 'destination_name' => ''];
         if (0 === $journalId) {
             return $return;
         }
 
         /** @var null|Transaction $source */
-        $source      = Transaction::where('transaction_journal_id', $journalId)
-            ->where('amount', '<', 0)
-            ->with(['account'])
-            ->first()
-        ;
+        $source      = Transaction::query()->where('transaction_journal_id', $journalId)->where('amount', '<', 0)->with(['account'])->first();
         if (null !== $source) {
             $return['source_id']   = $source->account_id;
             $return['source_name'] = $source->account->name;
         }
 
         /** @var null|Transaction $destination */
-        $destination = Transaction::where('transaction_journal_id', $journalId)
-            ->where('amount', '>', 0)
-            ->with(['account'])
-            ->first()
-        ;
+        $destination = Transaction::query()->where('transaction_journal_id', $journalId)->where('amount', '>', 0)->with(['account'])->first();
         if (null !== $destination) {
             $return['destination_id']   = $destination->account_id;
             $return['destination_name'] = $destination->account->name;
@@ -545,7 +537,7 @@ trait TransactionValidation
         }
 
         /** @var null|TransactionJournal $journal */
-        $journal = TransactionJournal::with(['transactionType'])->find($journalId);
+        $journal = TransactionJournal::query()->with(['transactionType'])->find($journalId);
         if (null !== $journal) {
             return strtolower((string) $journal->transactionType->type);
         }

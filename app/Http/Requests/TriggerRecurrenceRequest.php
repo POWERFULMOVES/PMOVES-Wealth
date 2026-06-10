@@ -38,6 +38,8 @@ class TriggerRecurrenceRequest extends FormRequest
     use ChecksLogin;
     use ConvertsDataTypes;
 
+    protected array $acceptedRoles = [];
+
     /**
      * Returns the data required by the controller.
      */
@@ -51,7 +53,7 @@ class TriggerRecurrenceRequest extends FormRequest
      */
     public function rules(): array
     {
-        return ['date' => 'required|date'];
+        return ['date' => ['required', 'date']];
     }
 
     public function withValidator(Validator $validator): void

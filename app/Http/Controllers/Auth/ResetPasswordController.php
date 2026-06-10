@@ -46,7 +46,7 @@ use SensitiveParameter;
  * and uses a simple trait to include this behavior. You're free to
  * explore this trait and override any methods you wish to tweak.
  */
-class ResetPasswordController extends Controller
+final class ResetPasswordController extends Controller
 {
     use ResetsPasswords;
 
@@ -85,7 +85,7 @@ class ResetPasswordController extends Controller
             return view('errors.error', ['message' => $message]);
         }
 
-        $rules    = ['token'    => 'required', 'email'    => 'required|email', 'password' => 'required|confirmed|min:16|secure_password'];
+        $rules    = ['token' => 'required', 'email' => 'required|email', 'password' => 'required|confirmed|min:16|secure_password'];
 
         $this->validate($request, $rules, $this->validationErrorMessages());
 
@@ -132,7 +132,7 @@ class ResetPasswordController extends Controller
             $allowRegistration = false;
         }
 
-        return view('auth.passwords.reset')->with([
+        return view('auth.passwords.reset', [
             'token'             => $token,
             'email'             => $request->email,
             'allowRegistration' => $allowRegistration,

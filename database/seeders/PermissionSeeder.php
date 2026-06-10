@@ -25,6 +25,7 @@ namespace Database\Seeders;
 
 use FireflyIII\Models\Role;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Log;
 use PDOException;
 
 /**
@@ -35,15 +36,15 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $roles = [
-            ['name'         => 'owner', 'display_name' => 'Site Owner', 'description'  => 'User runs this instance of FF3'],
-            ['name'         => 'demo', 'display_name' => 'Demo User', 'description'  => 'User is a demo user']
+            ['name' => 'owner', 'display_name' => 'Site Owner', 'description' => 'User runs this instance of FF3'],
+            ['name' => 'demo', 'display_name' => 'Demo User', 'description' => 'User is a demo user']
         ];
         foreach ($roles as $role) {
-            if (null === Role::where('name', $role['name'])->first()) {
+            if (null === Role::query()->where('name', $role['name'])->first()) {
                 try {
                     Role::create($role);
-                } catch (PDOException $e) {
-                    // @ignoreException
+                } catch (PDOException) {
+                    Log::debug(sprintf('User role with name "%s" already exists and that is OK.', $role['name']));
                 }
             }
         }

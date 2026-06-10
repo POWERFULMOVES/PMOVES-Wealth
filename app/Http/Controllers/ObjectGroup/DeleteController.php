@@ -35,7 +35,7 @@ use Illuminate\Http\RedirectResponse;
 /**
  * Class DeleteController
  */
-class DeleteController extends Controller
+final class DeleteController extends Controller
 {
     private ObjectGroupRepositoryInterface $repository;
 
@@ -61,13 +61,13 @@ class DeleteController extends Controller
      */
     public function delete(ObjectGroup $objectGroup): Factory|View
     {
-        $subTitle   = (string) trans('firefly.delete_object_group', ['title'   => $objectGroup->title]);
+        $subTitle   = (string) trans('firefly.delete_object_group', ['title' => $objectGroup->title]);
         $piggyBanks = $objectGroup->piggyBanks()->count();
 
         // put previous url in session
         $this->rememberPreviousUrl('object-groups.delete.url');
 
-        return view('object-groups.delete', ['objectGroup' => $objectGroup, 'subTitle'    => $subTitle, 'piggyBanks'  => $piggyBanks]);
+        return view('object-groups.delete', ['objectGroup' => $objectGroup, 'subTitle' => $subTitle, 'piggyBanks' => $piggyBanks]);
     }
 
     /**

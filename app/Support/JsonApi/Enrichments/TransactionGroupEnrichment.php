@@ -53,25 +53,7 @@ class TransactionGroupEnrichment implements EnrichmentInterface
     private array $metaData        = [];
     private array $notes           = [];
     private readonly TransactionCurrency $primaryCurrency;
-    private array $tags            = []; // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
+    private array $tags            = [];
 
     public function __construct()
     {
@@ -146,7 +128,7 @@ class TransactionGroupEnrichment implements EnrichmentInterface
                 $item['transactions'][$index]['attachment_count'] = array_key_exists($journalId, $attachmentCount) ? $attachmentCount[$journalId] : 0;
 
                 // default location data
-                $item['transactions'][$index]['location']         = ['latitude'   => null, 'longitude'  => null, 'zoom_level' => null];
+                $item['transactions'][$index]['location']         = ['latitude' => null, 'longitude' => null, 'zoom_level' => null];
 
                 // primary currency
                 $item['transactions'][$index]['primary_currency'] = [
@@ -230,7 +212,11 @@ class TransactionGroupEnrichment implements EnrichmentInterface
 
     private function collectMetaData(): void
     {
-        $set = TransactionJournalMeta::whereIn('transaction_journal_id', $this->journalIds)->get(['transaction_journal_id', 'name', 'data'])->toArray();
+        $set = TransactionJournalMeta::query()
+            ->whereIn('transaction_journal_id', $this->journalIds)
+            ->get(['transaction_journal_id', 'name', 'data'])
+            ->toArray()
+        ;
         foreach ($set as $entry) {
             $name                                                          = $entry['name'];
             $data                                                          = (string) $entry['data'];

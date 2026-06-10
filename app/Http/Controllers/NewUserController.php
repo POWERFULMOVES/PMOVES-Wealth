@@ -38,7 +38,7 @@ use Illuminate\View\View;
 /**
  * Class NewUserController.
  */
-class NewUserController extends Controller
+final class NewUserController extends Controller
 {
     use CreateStuff;
 
@@ -61,7 +61,7 @@ class NewUserController extends Controller
     /**
      * Form the user gets when he has no data in the system.
      *
-     * @return Factory|Redirector|RedirectResponse|View
+     * @return Factory|RedirectResponse|View
      */
     public function index(): Factory|\Illuminate\Contracts\View\View|Redirector|RedirectResponse
     {
@@ -83,7 +83,7 @@ class NewUserController extends Controller
     /**
      * Store his new settings.
      */
-    public function submit(NewUserFormRequest $request, CurrencyRepositoryInterface $currencyRepository): Redirector|RedirectResponse
+    public function submit(NewUserFormRequest $request, CurrencyRepositoryInterface $currencyRepository): RedirectResponse
     {
         $language      = $request->convertString('language');
         if (!array_key_exists($language, config('firefly.languages'))) {
@@ -109,11 +109,7 @@ class NewUserController extends Controller
         $currencyRepository->makePrimary($currency);
 
         // store frontpage preferences:
-        $accounts      = $this->repository
-            ->getAccountsByType([AccountTypeEnum::ASSET->value])
-            ->pluck('id')
-            ->toArray()
-        ;
+        $accounts      = $this->repository->getAccountsByType([AccountTypeEnum::ASSET->value])->pluck('id')->toArray();
         Preferences::set('frontpageAccounts', $accounts);
 
         // mark.

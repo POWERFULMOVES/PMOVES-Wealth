@@ -35,6 +35,8 @@ class MassEditJournalRequest extends FormRequest
 {
     use ChecksLogin;
 
+    protected array $acceptedRoles = [];
+
     /**
      * Rules for this request.
      */
@@ -43,10 +45,10 @@ class MassEditJournalRequest extends FormRequest
         // fixed
 
         return [
-            'description.*'    => 'required|min:1|max:1024',
-            'source_id.*'      => 'numeric|belongsToUser:accounts,id',
-            'destination_id.*' => 'numeric|belongsToUser:accounts,id',
-            'journals.*'       => 'numeric|belongsToUser:transaction_journals,id',
+            'description.*'    => ['required', 'min:1', 'max:1024'],
+            'source_id.*'      => ['numeric', 'belongsToUser:accounts,id'],
+            'destination_id.*' => ['numeric', 'belongsToUser:accounts,id'],
+            'journals.*'       => ['numeric', 'belongsToUser:transaction_journals,id'],
             'revenue_account'  => 'max:255',
             'expense_account'  => 'max:255',
         ];

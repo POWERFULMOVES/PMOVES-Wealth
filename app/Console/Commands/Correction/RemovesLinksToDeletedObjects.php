@@ -29,6 +29,8 @@ use FireflyIII\Models\Budget;
 use FireflyIII\Models\Category;
 use FireflyIII\Models\Tag;
 use FireflyIII\Models\TransactionJournal;
+use FireflyIII\Repositories\Budget\AvailableBudgetRepositoryInterface;
+use FireflyIII\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -55,25 +57,29 @@ class RemovesLinksToDeletedObjects extends Command
      */
     public function handle(): void
     {
-        $deletedTags       = Tag::withTrashed()
+        $deletedTags       = Tag::query()
+            ->withTrashed()
             ->whereNotNull('deleted_at')
             ->get('tags.id')
             ->pluck('id')
             ->toArray()
         ;
-        $deletedJournals   = TransactionJournal::withTrashed()
+        $deletedJournals   = TransactionJournal::query()
+            ->withTrashed()
             ->whereNotNull('deleted_at')
             ->get('transaction_journals.id')
             ->pluck('id')
             ->toArray()
         ;
-        $deletedBudgets    = Budget::withTrashed()
+        $deletedBudgets    = Budget::query()
+            ->withTrashed()
             ->whereNotNull('deleted_at')
             ->get('budgets.id')
             ->pluck('id')
             ->toArray()
         ;
-        $deletedCategories = Category::withTrashed()
+        $deletedCategories = Category::query()
+            ->withTrashed()
             ->whereNotNull('deleted_at')
             ->get('categories.id')
             ->pluck('id')
@@ -92,6 +98,18 @@ class RemovesLinksToDeletedObjects extends Command
         if (count($deletedCategories) > 0) {
             $this->cleanupCategories($deletedCategories);
         }
+
+        // count and clean up available budgets in currencies with no budget limits.
+        // this is not entirely the place for it but OK.
+        /** @var AvailableBudgetRepositoryInterface $repository */
+        $repository        = app(AvailableBudgetRepositoryInterface::class);
+
+        /** @var User $user */
+        foreach (User::get() as $user) {
+            $repository->setUser($user);
+            $repository->cleanup();
+        }
+
         $this->friendlyNeutral('Validated links to deleted objects.');
     }
 

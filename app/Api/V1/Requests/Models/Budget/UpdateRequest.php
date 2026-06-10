@@ -43,6 +43,8 @@ class UpdateRequest extends FormRequest
     use ConvertsDataTypes;
     use ValidatesAutoBudgetRequest;
 
+    protected array $acceptedRoles = [];
+
     /**
      * Get all data from the request.
      */
@@ -65,7 +67,7 @@ class UpdateRequest extends FormRequest
         ];
         $allData = $this->getAllData($fields);
         if (array_key_exists('auto_budget_type', $allData)) {
-            $types                       = ['none'     => 0, 'reset'    => 1, 'rollover' => 2, 'adjusted' => 3];
+            $types                       = ['none' => 0, 'reset' => 1, 'rollover' => 2, 'adjusted' => 3];
             $allData['auto_budget_type'] = $types[$allData['auto_budget_type']] ?? 0;
         }
 
@@ -83,7 +85,7 @@ class UpdateRequest extends FormRequest
         return [
             'name'                      => sprintf('min:1|max:100|uniqueObjectForUser:budgets,name,%d', $budget->id),
             'active'                    => [new IsBoolean()],
-            'notes'                     => 'nullable|min:1|max:32768',
+            'notes'                     => ['nullable', 'min:1', 'max:32768'],
             'auto_budget_type'          => 'in:reset,rollover,adjusted,none',
             'auto_budget_currency_id'   => 'exists:transaction_currencies,id',
             'auto_budget_currency_code' => 'exists:transaction_currencies,code',

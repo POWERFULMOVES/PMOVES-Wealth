@@ -40,7 +40,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Class EditController
  */
-class EditController extends Controller
+final class EditController extends Controller
 {
     private AttachmentHelperInterface $attachments;
     private BillRepositoryInterface $repository;
@@ -102,7 +102,7 @@ class EditController extends Controller
         $request->session()->flash('preFilled', $preFilled);
         $request->session()->forget('bills.edit.fromUpdate');
 
-        return view('bills.edit', ['subTitle'  => $subTitle, 'periods'   => $periods, 'rules'     => $rules, 'bill'      => $bill, 'preFilled' => $preFilled]);
+        return view('bills.edit', ['subTitle' => $subTitle, 'periods' => $periods, 'rules' => $rules, 'bill' => $bill, 'preFilled' => $preFilled]);
     }
 
     /**

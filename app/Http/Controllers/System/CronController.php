@@ -24,7 +24,6 @@ declare(strict_types=1);
 
 namespace FireflyIII\Http\Controllers\System;
 
-use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -32,11 +31,8 @@ use Illuminate\Support\Facades\Log;
 /**
  * Class CronController
  */
-class CronController
+final class CronController
 {
-    /**
-     * @return Application|Response|ResponseFactory
-     */
     public function cron(): Response|ResponseFactory
     {
         Log::error('The cron endpoint has moved to GET /api/v1/cron/[token]');

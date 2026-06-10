@@ -37,13 +37,15 @@ class StoreRequest extends FormRequest
     use ChecksLogin;
     use ConvertsDataTypes;
 
+    protected array $acceptedRoles = [];
+
     /**
      * Get all data from the request.
      */
     public function getAll(): array
     {
         $active = true;
-        $order  = 31337;
+        $order  = 31_337;
         if (null !== $this->get('active')) {
             $active = $this->boolean('active');
         }
@@ -65,8 +67,8 @@ class StoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title'       => 'required|min:1|max:100|uniqueObjectForUser:rule_groups,title',
-            'description' => 'min:1|max:32768|nullable',
+            'title'       => ['required', 'min:1', 'max:100', 'uniqueObjectForUser:rule_groups,title'],
+            'description' => ['min:1', 'max:32768', 'nullable'],
             'active'      => [new IsBoolean()],
         ];
     }

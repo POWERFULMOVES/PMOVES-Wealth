@@ -35,7 +35,7 @@ use Illuminate\Http\Request;
 /**
  * Class BudgetController
  */
-class BudgetController extends Controller
+final class BudgetController extends Controller
 {
     private BudgetRepositoryInterface $repository;
     protected array $acceptedRoles = [UserRoleEnum::READ_BUDGETS];
@@ -63,7 +63,7 @@ class BudgetController extends Controller
     public function budgets(AutocompleteApiRequest $request): JsonResponse
     {
         $result   = $this->repository->searchBudget($request->attributes->get('query'), $request->attributes->get('limit'));
-        $filtered = $result->map(static fn (Budget $item): array => ['id'     => (string) $item->id, 'name'   => $item->name, 'active' => $item->active]);
+        $filtered = $result->map(static fn (Budget $item): array => ['id' => (string) $item->id, 'name' => $item->name, 'active' => $item->active]);
 
         return response()->api($filtered->toArray());
     }

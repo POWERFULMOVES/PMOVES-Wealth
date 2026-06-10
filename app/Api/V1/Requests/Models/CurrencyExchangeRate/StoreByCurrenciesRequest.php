@@ -36,6 +36,8 @@ class StoreByCurrenciesRequest extends FormRequest
     use ChecksLogin;
     use ConvertsDataTypes;
 
+    protected array $acceptedRoles = [];
+
     public function getAll(): array
     {
         return $this->all();
@@ -46,7 +48,7 @@ class StoreByCurrenciesRequest extends FormRequest
      */
     public function rules(): array
     {
-        return ['*' => 'required|numeric|min:0.0000000001'];
+        return ['*' => ['required', 'numeric', 'min:0.0000000001']];
     }
 
     public function withValidator(Validator $validator): void

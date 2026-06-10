@@ -195,7 +195,7 @@ class Amount
 
     public function getAllCurrencies(): Collection
     {
-        return TransactionCurrency::orderBy('code', 'ASC')->get();
+        return TransactionCurrency::query()->orderBy('code', 'ASC')->get();
     }
 
     /**
@@ -225,21 +225,27 @@ class Amount
      */
     public function getAmountFromJournalObject(TransactionJournal $journal): string
     {
+        // Log::debug(sprintf('Get amount from journal #%d', $journal->id));
         $convertToPrimary  = $this->convertToPrimary();
         $currency          = $this->getPrimaryCurrency();
-        $field             = $convertToPrimary && $currency->id !== $journal->transaction_currency_id ? 'pc_amount' : 'amount';
+        $field             = $convertToPrimary && $currency->id !== $journal->transaction_currency_id ? 'native_amount' : 'amount';
 
         /** @var null|Transaction $sourceTransaction */
         $sourceTransaction = $journal->transactions()->where('amount', '<', 0)->first();
         if (null === $sourceTransaction) {
+            // Log::debug('Return zero!');
             return '0';
         }
         $amount            = $sourceTransaction->{$field} ?? '0';
+        // Log::debug(sprintf('Amount is %s', $amount));
         if ((int) $sourceTransaction->foreign_currency_id === $currency->id) {
             // use foreign amount instead!
             $amount = (string) $sourceTransaction->foreign_amount; // hard coded to be foreign amount.
+
+            // Log::debug(sprintf('Amount is now %s', $amount));
         }
 
+        // Log::debug(sprintf('Final return is %s', $amount));
         return $amount;
     }
 
@@ -268,7 +274,7 @@ class Amount
         return [
             'mon_decimal_point' => $config['mon_decimal_point'],
             'mon_thousands_sep' => $config['mon_thousands_sep'],
-            'format'            => ['pos'  => $positive, 'neg'  => $negative, 'zero' => $positive],
+            'format'            => ['pos' => $positive, 'neg' => $negative, 'zero' => $positive],
         ];
     }
 
@@ -308,7 +314,7 @@ class Amount
 
     public function getSystemCurrency(): TransactionCurrency
     {
-        return TransactionCurrency::whereNull('deleted_at')->where('code', 'EUR')->first();
+        return TransactionCurrency::query()->whereNull('deleted_at')->where('code', 'EUR')->first();
     }
 
     public function getTransactionCurrencyByCode(string $code): TransactionCurrency

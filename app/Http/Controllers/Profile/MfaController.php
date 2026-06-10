@@ -38,7 +38,6 @@ use FireflyIII\User;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
@@ -58,7 +57,7 @@ use Psr\Container\NotFoundExceptionInterface;
  * Page 3 (GET): Confirm 2FA status and show recovery codes.
  *        Same page as page 1, but when secret is present.
  */
-class MfaController extends Controller
+final class MfaController extends Controller
 {
     protected bool $internalAuth;
 
@@ -99,7 +98,7 @@ class MfaController extends Controller
         return view('profile.mfa.backup-codes-intro');
     }
 
-    public function backupCodesPost(ExistingTokenFormRequest $request): Redirector|RedirectResponse|View
+    public function backupCodesPost(ExistingTokenFormRequest $request): RedirectResponse|View
     {
         if (!$this->internalAuth) {
             $request->session()->flash('error', trans('firefly.external_user_mgt_disabled'));
@@ -144,13 +143,13 @@ class MfaController extends Controller
         $subTitle     = (string) trans('firefly.mfa_index_title');
         $subTitleIcon = 'fa-calculator';
 
-        return view('profile.mfa.disable-mfa')->with(['subTitle'     => $subTitle, 'subTitleIcon' => $subTitleIcon, 'enabledMFA'   => $enabledMFA]);
+        return view('profile.mfa.disable-mfa')->with(['subTitle' => $subTitle, 'subTitleIcon' => $subTitleIcon, 'enabledMFA' => $enabledMFA]);
     }
 
     /**
      * Delete 2FA routine.
      */
-    public function disableMFAPost(ExistingTokenFormRequest $request): Redirector|RedirectResponse
+    public function disableMFAPost(ExistingTokenFormRequest $request): RedirectResponse
     {
         if (!$this->internalAuth) {
             $request->session()->flash('error', trans('firefly.external_user_mgt_disabled'));
@@ -173,7 +172,7 @@ class MfaController extends Controller
         session()->flash('info', (string) trans('firefly.pref_two_factor_auth_remove_it'));
 
         // also logout current 2FA tokens.
-        $cookieName = config('google2fa.cookie_name', 'google2fa_token');
+        $cookieName = config('google2fa.cookie_name', 'firefly_iii_mfa_token');
         Cookie::forget($cookieName);
 
         // send user notification.
@@ -186,7 +185,7 @@ class MfaController extends Controller
     /**
      * Enable 2FA screen.
      */
-    public function enableMFA(Request $request): Redirector|RedirectResponse|View
+    public function enableMFA(Request $request): RedirectResponse|View
     {
         if (!$this->internalAuth) {
             $request->session()->flash('error', trans('firefly.external_user_mgt_disabled'));
@@ -212,7 +211,7 @@ class MfaController extends Controller
 
         Preferences::set('temp-mfa-secret', $secret);
 
-        return view('profile.mfa.enable-mfa', ['image'  => $image, 'secret' => $secret]);
+        return view('profile.mfa.enable-mfa', ['image' => $image, 'secret' => $secret]);
     }
 
     /**
@@ -221,7 +220,7 @@ class MfaController extends Controller
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      */
-    public function enableMFAPost(TokenFormRequest $request): Redirector|RedirectResponse
+    public function enableMFAPost(TokenFormRequest $request): RedirectResponse
     {
         if (!$this->internalAuth) {
             $request->session()->flash('error', trans('firefly.external_user_mgt_disabled'));
@@ -234,7 +233,7 @@ class MfaController extends Controller
 
         // verify password.
         $password   = $request->get('password');
-        if (!auth()->validate(['email'    => $user->email, 'password' => $password])) {
+        if (!auth()->validate(['email' => $user->email, 'password' => $password])) {
             session()->flash('error', 'Bad user pw, no MFA for you!');
 
             return redirect(route('profile.mfa.index'));
@@ -286,7 +285,7 @@ class MfaController extends Controller
         $subTitleIcon = 'fa-calculator';
         $enabledMFA   = null !== auth()->user()->mfa_secret;
 
-        return view('profile.mfa.index')->with(['subTitle'     => $subTitle, 'subTitleIcon' => $subTitleIcon, 'enabledMFA'   => $enabledMFA]);
+        return view('profile.mfa.index')->with(['subTitle' => $subTitle, 'subTitleIcon' => $subTitleIcon, 'enabledMFA' => $enabledMFA]);
     }
 
     /**

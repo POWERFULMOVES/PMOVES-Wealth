@@ -27,14 +27,12 @@ use Carbon\Carbon;
 use FireflyIII\Events\Security\System\UnknownUserTriedLogin;
 use FireflyIII\Events\Security\User\UserFailedLoginAttempt;
 use FireflyIII\Events\Security\User\UserSuccessfullyLoggedIn;
-use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Http\Controllers\Controller;
 use FireflyIII\Providers\RouteServiceProvider;
 use FireflyIII\Repositories\User\UserRepositoryInterface;
 use FireflyIII\Support\Facades\FireflyConfig;
 use FireflyIII\Support\Facades\Steam;
 use FireflyIII\User;
-use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
@@ -48,8 +46,6 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 /**
@@ -59,7 +55,7 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
  * redirecting them to your home screen. The controller uses a trait
  * to conveniently provide its functionality to your applications.
  */
-class LoginController extends Controller
+final class LoginController extends Controller
 {
     use AuthenticatesUsers;
     use ThrottlesLogins;
@@ -153,7 +149,7 @@ class LoginController extends Controller
     /**
      * Log the user out of the application.
      */
-    public function logout(Request $request): Redirector|RedirectResponse|Response
+    public function logout(Request $request): RedirectResponse|Response
     {
         $authGuard  = config('firefly.authentication_guard');
         $logoutUrl  = config('firefly.custom_logout_url');
@@ -165,7 +161,7 @@ class LoginController extends Controller
         }
 
         // also logout current 2FA tokens.
-        $cookieName = config('google2fa.cookie_name', 'google2fa_token');
+        $cookieName = config('google2fa.cookie_name', 'firefly_iii_mfa_token');
         Cookie::forget($cookieName);
 
         $this->guard()->logout();
@@ -181,15 +177,17 @@ class LoginController extends Controller
 
     /**
      * Show the application's login form.
-     *
-     * @return Application|Factory|Redirector|RedirectResponse|View
-     *
-     * @throws FireflyException
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     public function showLoginForm(Request $request): Factory|Redirector|RedirectResponse|View
     {
+        if ('remote_user_guard' === config('auth.defaults.guard')) {
+            $message = sprintf(
+                'Firefly III is configured to use the "remote user guard", but was unable to link you to a user. Are you sure the "%s" header is in place?',
+                config('auth.guard_header')
+            );
+
+            return view('errors.error', ['message' => $message]);
+        }
         Log::channel('audit')->info('Show login form (1.1).');
 
         $count             = DB::table('users')->count();
@@ -219,7 +217,7 @@ class LoginController extends Controller
 
         $storeInCookie     = config('google2fa.store_in_cookie', false);
         if (false !== $storeInCookie) {
-            $cookieName = config('google2fa.cookie_name', 'google2fa_token');
+            $cookieName = config('google2fa.cookie_name', 'firefly_iii_mfa_token');
             Cookie::queue(Cookie::make($cookieName, 'invalid-'.Carbon::now()->getTimestamp()));
         }
         $usernameField     = $this->username();
@@ -251,7 +249,7 @@ class LoginController extends Controller
      */
     protected function sendFailedLoginResponse(Request $request): void
     {
-        $exception             = ValidationException::withMessages([$this->username()             => [trans('auth.failed')]]);
+        $exception             = ValidationException::withMessages([$this->username() => [trans('auth.failed')]]);
         $exception->redirectTo = route('login');
 
         throw $exception;
@@ -266,11 +264,11 @@ class LoginController extends Controller
     {
         $request->session()->regenerate();
         $this->clearLoginAttempts($request);
-
-        if ($response = $this->authenticated($request, $this->guard()->user())) {
+        $response = $this->authenticated($request, $this->guard()->user());
+        if (null !== $response) {
             return $response;
         }
-        $path = Steam::getSafeUrl(session()->pull('url.intended', route('index')), route('index'));
+        $path     = Steam::getSafeUrl(session()->pull('url.intended', route('index')), route('index'));
         Log::debug(sprintf('SafeURL is %s', $path));
 
         return $request->wantsJson() ? new JsonResponse([], 204) : redirect()->to($path);

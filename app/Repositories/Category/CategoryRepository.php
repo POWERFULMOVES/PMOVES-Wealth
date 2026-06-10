@@ -89,8 +89,8 @@ class CategoryRepository implements CategoryRepositoryInterface, UserGroupInterf
         foreach ($categories as $category) {
             DB::table('category_transaction')->where('category_id', $category->id)->delete();
             DB::table('category_transaction_journal')->where('category_id', $category->id)->delete();
-            RecurrenceTransactionMeta::where('name', 'category_id')->where('value', $category->id)->delete();
-            RuleAction::where('action_type', 'set_category')->where('action_value', $category->name)->delete();
+            RecurrenceTransactionMeta::query()->where('name', 'category_id')->where('value', $category->id)->delete();
+            RuleAction::query()->where('action_type', 'set_category')->where('action_value', $category->name)->delete();
             $category->delete();
         }
         Log::channel('audit')->info('Delete all categories through destroyAll');
@@ -111,11 +111,7 @@ class CategoryRepository implements CategoryRepositoryInterface, UserGroupInterf
     public function findByName(string $name): ?Category
     {
         /** @var null|Category */
-        return $this->user
-            ->categories()
-            ->where('name', $name)
-            ->first(['categories.*'])
-        ;
+        return $this->user->categories()->where('name', $name)->first(['categories.*']);
     }
 
     /**
@@ -170,7 +166,7 @@ class CategoryRepository implements CategoryRepositoryInterface, UserGroupInterf
 
         $disk = Storage::disk('upload');
 
-        return $set->each(static function (Attachment $attachment) use ($disk): Attachment { // @phpstan-ignore-line
+        return $set->each(static function (Attachment $attachment) use ($disk): Attachment {
             $notes                   = $attachment->notes()->first();
             $attachment->file_exists = $disk->exists($attachment->fileName());
             $attachment->notes_text  = null !== $notes ? $notes->text : '';
@@ -184,11 +180,7 @@ class CategoryRepository implements CategoryRepositoryInterface, UserGroupInterf
      */
     public function getByIds(array $categoryIds): Collection
     {
-        return $this->user
-            ->categories()
-            ->whereIn('id', $categoryIds)
-            ->get()
-        ;
+        return $this->user->categories()->whereIn('id', $categoryIds)->get();
     }
 
     /**
@@ -196,12 +188,7 @@ class CategoryRepository implements CategoryRepositoryInterface, UserGroupInterf
      */
     public function getCategories(): Collection
     {
-        return $this->user
-            ->categories()
-            ->with(['attachments'])
-            ->orderBy('name', 'ASC')
-            ->get()
-        ;
+        return $this->user->categories()->with(['attachments'])->orderBy('name', 'ASC')->get();
     }
 
     public function getNoteText(Category $category): ?string

@@ -48,7 +48,7 @@ use Illuminate\View\View;
 /**
  * Class ReconcileController.
  */
-class ReconcileController extends Controller
+final class ReconcileController extends Controller
 {
     private AccountRepositoryInterface $accountRepos;
     private JournalRepositoryInterface $repository;
@@ -74,7 +74,7 @@ class ReconcileController extends Controller
     /**
      * Reconciliation overview.
      *
-     * @return Factory|Redirector|RedirectResponse|View
+     * @return Factory|RedirectResponse|View
      *
      * @throws FireflyException
      *                                              */
@@ -137,7 +137,7 @@ class ReconcileController extends Controller
         );
 
         $subTitleIcon    = config(sprintf('firefly.subIconsByIdentifier.%s', $account->accountType->type));
-        $subTitle        = (string) trans('firefly.reconcile_account', ['account'     => $account->name]);
+        $subTitle        = (string) trans('firefly.reconcile_account', ['account' => $account->name]);
 
         // various links
         $transactionsUrl = route('accounts.reconcile.transactions', [$account->id, '%start%', '%end%']);
@@ -166,7 +166,7 @@ class ReconcileController extends Controller
      *
      * @throws DuplicateTransactionException
      */
-    public function submit(ReconciliationStoreRequest $request, Account $account, Carbon $start, Carbon $end): Redirector|RedirectResponse
+    public function submit(ReconciliationStoreRequest $request, Account $account, Carbon $start, Carbon $end): RedirectResponse
     {
         if (!$this->isEditableAccount($account)) {
             return $this->redirectAccountToAccount($account);

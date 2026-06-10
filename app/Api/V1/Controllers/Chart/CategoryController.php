@@ -45,7 +45,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Class BudgetController
  */
-class CategoryController extends Controller
+final class CategoryController extends Controller
 {
     use CleansChartData;
     use ValidatesUserGroupTrait;
@@ -153,8 +153,8 @@ class CategoryController extends Controller
                 'end_date'                        => $end->toAtomString(),
                 'yAxisID'                         => 0,
                 'type'                            => 'bar',
-                'entries'                         => ['spent'  => '0', 'earned' => '0'],
-                'pc_entries'                      => ['spent'  => '0', 'earned' => '0'],
+                'entries'                         => ['spent' => '0', 'earned' => '0'],
+                'pc_entries'                      => ['spent' => '0', 'earned' => '0'],
             ];
 
             // add monies
@@ -179,9 +179,9 @@ class CategoryController extends Controller
 
         // order by amount
         usort($return, static fn (array $a, array $b): int => ((float) $a['entries']['spent'] + (float) $a['entries']['earned'])
-        < ((float) $b['entries']['spent'] + (float) $b['entries']['earned'])
-            ? 1
-            : -1);
+            < ((float) $b['entries']['spent'] + (float) $b['entries']['earned'])
+                ? 1
+                : -1);
 
         return response()->json($this->clean($return));
     }

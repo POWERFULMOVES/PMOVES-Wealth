@@ -36,7 +36,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Class IndexController
  */
-class IndexController extends Controller
+final class IndexController extends Controller
 {
     private ObjectGroupRepositoryInterface $repository;
 
@@ -64,7 +64,7 @@ class IndexController extends Controller
         $subTitle     = (string) trans('firefly.object_groups_index');
         $objectGroups = $this->repository->get();
 
-        return view('object-groups.index', ['subTitle'     => $subTitle, 'objectGroups' => $objectGroups]);
+        return view('object-groups.index', ['subTitle' => $subTitle, 'objectGroups' => $objectGroups]);
     }
 
     /**

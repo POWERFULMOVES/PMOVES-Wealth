@@ -35,7 +35,7 @@ use Illuminate\Http\Request;
 /**
  * Class ObjectGroupController
  */
-class ObjectGroupController extends Controller
+final class ObjectGroupController extends Controller
 {
     private ObjectGroupRepositoryInterface $repository;
     protected array $acceptedRoles = [UserRoleEnum::READ_ONLY];
@@ -67,7 +67,7 @@ class ObjectGroupController extends Controller
 
         /** @var ObjectGroup $objectGroup */
         foreach ($result as $objectGroup) {
-            $return[] = ['id'    => (string) $objectGroup->id, 'name'  => $objectGroup->title, 'title' => $objectGroup->title];
+            $return[] = ['id' => (string) $objectGroup->id, 'name' => $objectGroup->title, 'title' => $objectGroup->title];
         }
 
         return response()->api($return);

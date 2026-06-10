@@ -36,6 +36,8 @@ class StoreRequest extends FormRequest
     use ChecksLogin;
     use ConvertsDataTypes;
 
+    protected array $acceptedRoles = [];
+
     public function getDate(): ?Carbon
     {
         return $this->getCarbonDate('date');
@@ -62,10 +64,10 @@ class StoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'date' => 'required|date|after:1970-01-02|before:2038-01-17',
-            'rate' => 'required|numeric|gt:0',
-            'from' => 'required|exists:transaction_currencies,code',
-            'to'   => 'required|exists:transaction_currencies,code',
+            'date' => ['required', 'date', 'after:1970-01-02', 'before:2038-01-17'],
+            'rate' => ['required', 'numeric', 'gt:0'],
+            'from' => ['required', 'exists:transaction_currencies,code'],
+            'to'   => ['required', 'exists:transaction_currencies,code'],
         ];
     }
 }

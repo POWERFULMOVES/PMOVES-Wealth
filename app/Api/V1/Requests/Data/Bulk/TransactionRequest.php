@@ -45,6 +45,8 @@ class TransactionRequest extends FormRequest
     use ConvertsDataTypes;
     use ValidatesBulkTransactionQuery;
 
+    protected array $acceptedRoles = [];
+
     public function getAll(): array
     {
         $data = [];
@@ -61,7 +63,7 @@ class TransactionRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['query' => ['required', 'min:1', 'max:255', 'json', new IsValidBulkClause(ClauseType::TRANSACTION)]];
+        return ['query' => ['required', 'min:1', 'max:255', 'json', new IsValidBulkClause(ClauseType::TRANSACTION->value)]];
     }
 
     public function withValidator(Validator $validator): void

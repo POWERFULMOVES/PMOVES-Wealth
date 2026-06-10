@@ -47,6 +47,12 @@ use Illuminate\Support\Collection;
  */
 interface JournalRepositoryInterface
 {
+    public function countByDescription(string $value, bool $includeDeleted): int;
+
+    public function countByMeta(string $field, string $value, bool $includeDeleted): int;
+
+    public function countByNotes(string $value, bool $includeDeleted): int;
+
     /**
      * Deletes a transaction group.
      */

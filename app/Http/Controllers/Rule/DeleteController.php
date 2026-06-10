@@ -35,7 +35,7 @@ use Illuminate\View\View;
 /**
  * Class DeleteController
  */
-class DeleteController extends Controller
+final class DeleteController extends Controller
 {
     /** @var RuleRepositoryInterface Rule repository */
     private $ruleRepos;
@@ -69,7 +69,7 @@ class DeleteController extends Controller
         // put previous url in session
         $this->rememberPreviousUrl('rules.delete.url');
 
-        return view('rules.rule.delete', ['rule'     => $rule, 'subTitle' => $subTitle]);
+        return view('rules.rule.delete', ['rule' => $rule, 'subTitle' => $subTitle]);
     }
 
     /**

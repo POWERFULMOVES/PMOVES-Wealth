@@ -21,6 +21,10 @@
         </div>
     @endif
 
+    <div id="client-errors" class="alert alert-danger" role="alert" style="display:none;">
+        <ul id="client-errors-list"></ul>
+    </div>
+
     <div class="card">
         <div class="card-body register-card-body">
             <p class="login-box-msg">{{ trans('firefly.register_new_account') }}</p>
@@ -35,17 +39,17 @@
                 </div>
                 <div class="input-group mb-3">
                     <input type="password" autocomplete="new-password" required class="form-control"
-                           placeholder="{{ trans('form.password') }}" name="password"/>
+                           placeholder="{{ trans('form.password') }}" minlength="16" name="password"/>
                     <div class="input-group-text"> <em class="fa-solid fa-lock"></em> </div>
                 </div>
                 <div class="input-group mb-3">
-                    <input type="password" autocomplete="new-password" required class="form-control"
+                    <input type="password" autocomplete="new-password" minlength="16" required class="form-control"
                            placeholder="{{ trans('form.password_confirmation') }}" name="password_confirmation"/>
                     <div class="input-group-text"> <em class="fa-solid fa-lock"></em> </div>
                 </div>
                 <div class="row">
                     <div class="col-12">
-                            <input type="checkbox" id="verify_password" checked name="verify_password" value="1">
+                            <input type="checkbox" id="verify_password" name="verify_password" value="1">
                             <label for="verify_password">
                                 {{ trans('form.verify_password') }}
                                 <a href="#"
@@ -76,5 +80,12 @@
 
 @endsection
 @section('scripts')
-    @vite(['src/pages/dashboard/dashboard.js'])
+    <script nonce="{{ $JS_NONCE }}">
+        var route = '{{ route('register') }}';
+        var passwordLengthError = '{{ blade_escape_js((string)trans('validation.min.string', ['attribute' => 'password', 'min' => 16])) }}';
+        var passwordMatchError = '{{ blade_escape_js(trans('validation.confirmed', ['attribute' => 'password'])) }}';
+        var waitForVerify = '{{ blade_escape_js(trans('validation.verifying_password')) }}';
+        var needSecurePassword = '{{ blade_escape_js(trans('validation.secure_password')) }}';
+        </script>
+    <script nonce="{{$JS_NONCE}}" src="v1/js/ff/auth/register.js"></script>
 @endsection

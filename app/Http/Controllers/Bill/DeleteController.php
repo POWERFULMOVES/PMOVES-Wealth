@@ -31,13 +31,12 @@ use FireflyIII\Support\Facades\Preferences;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Redirector;
 use Illuminate\View\View;
 
 /**
  * Class DeleteController
  */
-class DeleteController extends Controller
+final class DeleteController extends Controller
 {
     private BillRepositoryInterface $repository;
 
@@ -70,13 +69,13 @@ class DeleteController extends Controller
         $this->rememberPreviousUrl('bills.delete.url');
         $subTitle = (string) trans('firefly.delete_bill', ['name' => $bill->name]);
 
-        return view('bills.delete', ['bill'     => $bill, 'subTitle' => $subTitle]);
+        return view('bills.delete', ['bill' => $bill, 'subTitle' => $subTitle]);
     }
 
     /**
      * Destroy a bill.
      */
-    public function destroy(Request $request, Bill $bill): Redirector|RedirectResponse
+    public function destroy(Request $request, Bill $bill): RedirectResponse
     {
         $name = $bill->name;
         $this->repository->destroy($bill);

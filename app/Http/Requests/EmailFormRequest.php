@@ -37,13 +37,15 @@ class EmailFormRequest extends FormRequest
     use ChecksLogin;
     use ConvertsDataTypes;
 
+    protected array $acceptedRoles = [];
+
     /**
      * Rules for this request.
      */
     public function rules(): array
     {
         // fixed
-        return ['email' => 'required|email'];
+        return ['email' => ['required', 'email']];
     }
 
     public function withValidator(Validator $validator): void

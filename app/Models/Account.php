@@ -42,6 +42,10 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
+/**
+ * @property AccountType $accountType
+ * @property User        $user
+ */
 #[ObservedBy([DeletedAccountObserver::class])]
 class Account extends Model
 {
@@ -79,11 +83,6 @@ class Account extends Model
         }
 
         throw new NotFoundHttpException();
-    }
-
-    public function accountBalances(): HasMany
-    {
-        return $this->hasMany(AccountBalance::class);
     }
 
     public function accountMeta(): HasMany

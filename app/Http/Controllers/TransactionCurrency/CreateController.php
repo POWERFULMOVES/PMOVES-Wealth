@@ -41,7 +41,7 @@ use Illuminate\View\View;
 /**
  * Class CreateController
  */
-class CreateController extends Controller
+final class CreateController extends Controller
 {
     protected CurrencyRepositoryInterface $repository;
     protected UserRepositoryInterface $userRepository;
@@ -66,7 +66,7 @@ class CreateController extends Controller
     /**
      * Create a currency.
      *
-     * @return Factory|Redirector|RedirectResponse|View
+     * @return Factory|RedirectResponse|View
      */
     public function create(Request $request): Factory|\Illuminate\Contracts\View\View|Redirector|RedirectResponse
     {
@@ -89,13 +89,13 @@ class CreateController extends Controller
 
         Log::channel('audit')->info('Create new currency.');
 
-        return view('currencies.create', ['subTitleIcon' => $subTitleIcon, 'subTitle'     => $subTitle]);
+        return view('currencies.create', ['subTitleIcon' => $subTitleIcon, 'subTitle' => $subTitle]);
     }
 
     /**
      * Store new currency.
      *
-     * @return $this|Redirector|RedirectResponse
+     * @return RedirectResponse
      */
     public function store(CurrencyFormRequest $request)
     {

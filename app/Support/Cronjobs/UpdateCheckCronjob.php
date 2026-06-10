@@ -60,7 +60,7 @@ class UpdateCheckCronjob extends AbstractCronjob
         $now                = Carbon::now()->getTimestamp();
         $diff               = $now - $lastCheckTime->data;
         Log::debug(sprintf('Last check time is %d, current time is %d, difference is %d', $lastCheckTime->data, $now, $diff));
-        if ($diff < 604800 && false === $this->force) {
+        if ($diff < 604_800 && false === $this->force) {
             // get stuff from job:
             $this->jobFired     = false;
             $this->jobErrored   = false;
@@ -75,12 +75,12 @@ class UpdateCheckCronjob extends AbstractCronjob
         // last check time was more than a week ago.
         Log::debug('Have not checked for a new version in a week!');
         $release            = $this->getLatestRelease();
-        if ('error' === $release['level']) {
+        if ('' !== $release->getError()) {
             // get stuff from job:
             $this->jobFired     = true;
             $this->jobErrored   = true;
             $this->jobSucceeded = false;
-            $this->message      = $release['message'];
+            $this->message      = $release->getError();
 
             return;
         }
@@ -88,6 +88,23 @@ class UpdateCheckCronjob extends AbstractCronjob
         $this->jobFired     = true;
         $this->jobErrored   = false;
         $this->jobSucceeded = false;
-        $this->message      = $release['message'];
+        $this->message      = trans('firefly.no_new_release_available');
+
+        if ($release->isNewVersionAvailable()) {
+            // if running develop, slightly different message.
+            if (str_contains(config('firefly.version'), 'develop')) {
+                $this->message = trans('firefly.update_current_dev_older', [
+                    'version'     => config('firefly.version'),
+                    'new_version' => $release->getNewVersion(),
+                ]);
+            }
+            if (!str_contains(config('firefly.version'), 'develop')) {
+                $this->message = trans('firefly.update_new_version_alert', [
+                    'your_version' => config('firefly.version'),
+                    'new_version'  => $release->getNewVersion(),
+                    'date'         => $release->getPublishedAt()->format('Y-m-d H:i:s'),
+                ]);
+            }
+        }
     }
 }

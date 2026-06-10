@@ -30,7 +30,7 @@ use FireflyIII\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
-use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -38,24 +38,28 @@ use Illuminate\Support\Facades\Log;
  */
 class RemoteUserGuard implements Guard
 {
-    protected Application $application;
+    // protected Application $application;
     protected ?User $user = null;
+    private bool $tried   = false;
 
     /**
      * Create a new authentication guard.
      */
     public function __construct(
-        protected UserProvider $provider,
-        Application $app
+        protected UserProvider $provider
     ) {
-        $app->get('request');
-        // Log::debug(sprintf('Created RemoteUserGuard for %s "%s"', $request?->getMethod(), $request?->getRequestUri()));
-        $this->application = $app;
+        Log::debug(sprintf('Created RemoteUserGuard for %s "%s"', app()->get('request')?->getMethod(), app()->get('request')?->getRequestUri()));
     }
 
     public function authenticate(): void
     {
-        // Log::debug(sprintf('Now at %s', __METHOD__));
+        $this->tried   = true;
+        Log::debug(sprintf('Now at %s', __METHOD__));
+        if (App::runningInConsole()) {
+            Log::debug('Running in console, will not authenticate.');
+
+            return;
+        }
         if ($this->user instanceof User) {
             Log::debug(sprintf('%s is found: #%d, "%s".', $this->user::class, $this->user->id, $this->user->email));
 
@@ -70,10 +74,14 @@ class RemoteUserGuard implements Guard
             $userID = request()->server($header) ?? apache_request_headers()[$header] ?? null;
         }
 
+        // test value for development
+        // $userID = 'james@firefly';
+
         if (null === $userID || '' === $userID) {
             Log::error(sprintf('No user in header "%s".', $header));
 
-            throw new FireflyException('The guard header was unexpectedly empty. See the logs.');
+            // throw new FireflyException('The guard header was unexpectedly empty. See the logs.');
+            return;
         }
 
         Log::debug(sprintf('User ID found in header is "%s"', $userID));
@@ -132,21 +140,33 @@ class RemoteUserGuard implements Guard
         return $this->user?->id;
     }
 
-    public function setUser(Authenticatable|User|null $user): void // @phpstan-ignore-line
+    public function setUser(Authenticatable|User|null $user): Guard
     {
         // Log::debug(sprintf('Now at %s', __METHOD__));
         if ($user instanceof User) {
             $this->user = $user;
 
-            return;
+            return $this;
         }
         Log::error(sprintf('Did not set user at %s', __METHOD__));
+
+        return $this;
     }
 
     public function user(): ?User
     {
+        if (App::runningInConsole()) {
+            Log::debug('Running in console, will not authenticate.');
+
+            return null;
+        }
+        if (false === $this->tried) {
+            Log::debug('Have not tried authentication, do it now.');
+            $this->authenticate();
+        }
         // Log::debug(sprintf('Now at %s', __METHOD__));
         $user = $this->user;
+
         if (!$user instanceof User) {
             Log::debug('User is NULL');
 

@@ -42,12 +42,14 @@ class StoreRequest extends FormRequest
     use ChecksLogin;
     use ConvertsDataTypes;
 
+    protected array $acceptedRoles = [];
+
     /**
      * Get all data from the request.
      */
     public function getAll(): array
     {
-        $fields                            = ['order'                            => ['order', 'convertInteger']];
+        $fields                            = ['order' => ['order', 'convertInteger']];
         $data                              = $this->getAllData($fields);
         $data['name']                      = $this->convertString('name');
         $data['accounts']                  = $this->parseAccounts($this->get('accounts'));
@@ -69,18 +71,18 @@ class StoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'                      => 'required|min:1|max:255|uniquePiggyBankForUser',
+            'name'                      => ['required', 'min:1', 'max:255', 'uniquePiggyBankForUser'],
             'accounts'                  => 'required',
-            'accounts.*'                => 'array|required',
-            'accounts.*.account_id'     => 'required|numeric|belongsToUser:accounts,id',
+            'accounts.*'                => ['array', 'required'],
+            'accounts.*.account_id'     => ['required', 'numeric', 'belongsToUser:accounts,id'],
             'accounts.*.current_amount' => ['numeric', new IsValidZeroOrMoreAmount()],
-            'object_group_id'           => 'numeric|belongsToUser:object_groups,id',
+            'object_group_id'           => ['numeric', 'belongsToUser:object_groups,id'],
             'object_group_title'        => ['min:1', 'max:255'],
             'target_amount'             => ['required', new IsValidZeroOrMoreAmount()],
-            'start_date'                => 'required|date|after:1970-01-01|before:2038-01-17',
-            'transaction_currency_id'   => 'exists:transaction_currencies,id|required_without:transaction_currency_code',
-            'transaction_currency_code' => 'exists:transaction_currencies,code|required_without:transaction_currency_id',
-            'target_date'               => 'date|nullable|after:start_date',
+            'start_date'                => ['required', 'date', 'after:1970-01-01', 'before:2038-01-17'],
+            'transaction_currency_id'   => ['exists:transaction_currencies,id', 'required_without:transaction_currency_code'],
+            'transaction_currency_code' => ['exists:transaction_currencies,code', 'required_without:transaction_currency_id'],
+            'target_date'               => ['date', 'nullable', 'after:start_date'],
             'notes'                     => 'max:65000',
         ];
     }
@@ -114,7 +116,7 @@ class StoreRequest extends FormRequest
                             $validator->errors()->add(sprintf('accounts.%d', $index), trans('validation.invalid_account_currency'));
                         }
                         $type            = $account->accountType->type;
-                        if (!in_array($type, $types, true)) {
+                        if (!in_array($type, $types, strict: true)) {
                             $validator->errors()->add(sprintf('accounts.%d', $index), trans('validation.invalid_account_type'));
                         }
                     }

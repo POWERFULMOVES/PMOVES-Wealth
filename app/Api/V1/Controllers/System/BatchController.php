@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /*
  * BatchController.php
  * Copyright (c) 2026 james@firefly-iii.org
@@ -22,6 +20,8 @@ declare(strict_types=1);
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 namespace FireflyIII\Api\V1\Controllers\System;
 
 use FireflyIII\Api\V1\Controllers\Controller;
@@ -31,8 +31,9 @@ use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
-class BatchController extends Controller
+final class BatchController extends Controller
 {
     private JournalRepositoryInterface $repository;
 
@@ -52,19 +53,25 @@ class BatchController extends Controller
 
     public function finishBatch(Request $request): JsonResponse
     {
+        Log::debug('Now in finishBatch.');
         $journals          = $this->repository->getUncompletedJournals();
         if (0 === count($journals)) {
+            Log::debug('Counted zero journals, return.');
+
             return response()->json([], 204);
         }
+        Log::debug(sprintf('Counted %d journals.', count($journals)));
 
-        /** @var TransactionJournal $first */
+        /** @var null|TransactionJournal $first */
         $first             = $journals->first();
         $group             = $first?->transactionGroup;
         if (null === $group) {
+            Log::debug('First group is NULL.');
+
             return response()->json([], 204);
         }
         $flags             = new TransactionGroupEventFlags();
-        $flags->applyRules = 'true' === $request->get('apply_rules');
+        $flags->applyRules = 'true' === $request->input('apply_rules');
         event(new UserRequestedBatchProcessing($flags));
         // event(new CreatedSingleTransactionGroup($group, $flags));
 

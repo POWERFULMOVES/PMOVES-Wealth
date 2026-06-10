@@ -30,7 +30,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
-class IndexController extends Controller
+final class IndexController extends Controller
 {
     /**
      * Show all administrations.
@@ -44,6 +44,6 @@ class IndexController extends Controller
         $mainTitleIcon = 'fa-book';
         Log::debug(sprintf('Now at %s', __METHOD__));
 
-        return view('administrations.index')->with(['title'         => $title, 'subTitle'      => $subTitle, 'mainTitleIcon' => $mainTitleIcon]);
+        return view('administrations.index')->with(['title' => $title, 'subTitle' => $subTitle, 'mainTitleIcon' => $mainTitleIcon]);
     }
 }

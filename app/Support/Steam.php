@@ -83,10 +83,12 @@ class Steam
         $currencies  = $this->getCurrencies($accounts);
 
         // balance(s) in all currencies for ALL accounts.
-        $arrayOfSums = Transaction::whereIn('account_id', $accounts->pluck('id')->toArray())
+        $arrayOfSums = Transaction::query()
+            ->whereIn('account_id', $accounts->pluck('id')->toArray())
             ->leftJoin('transaction_journals', 'transaction_journals.id', '=', 'transactions.transaction_journal_id')
             ->leftJoin('transaction_currencies', 'transaction_currencies.id', '=', 'transactions.transaction_currency_id')
             ->where('transaction_journals.date', $inclusive ? '<=' : '<', $date->format('Y-m-d H:i:s'))
+            ->whereNull('transaction_journals.deleted_at')
             ->groupBy(['transactions.account_id', 'transaction_currencies.code'])
             ->get(['transactions.account_id', 'transaction_currencies.code', DB::raw('SUM(transactions.amount) as sum_of_amount')])
             ->toArray()
@@ -96,7 +98,7 @@ class Steam
 
         /** @var Account $account */
         foreach ($accounts as $account) {
-            $return               = ['pc_balance' => '0', 'balance'    => '0']; // this key is overwritten right away, but I must remember it is always created.
+            $return               = ['pc_balance' => '0', 'balance' => '0']; // this key is overwritten right away, but I must remember it is always created.
             $currency             = $currencies[$account->id];
 
             // second array
@@ -356,7 +358,7 @@ class Steam
             $primary = Amount::getPrimaryCurrencyByUserGroup($account->user->userGroup);
         }
         // account balance thing.
-        $currencyPresent   = isset($account->meta) && array_key_exists('currency', $account->meta) && null !== $account->meta['currency'];
+        $currencyPresent   = property_exists($account, 'meta') && array_key_exists('currency', $account->meta) && null !== $account->meta['currency'];
         if ($currencyPresent) {
             $accountCurrency = $account->meta['currency'];
         }
@@ -365,7 +367,7 @@ class Steam
         }
         $hasCurrency       = null !== $accountCurrency;
         $currency          = $hasCurrency ? $accountCurrency : $primary;
-        $return            = ['pc_balance' => '0', 'balance'    => '0']; // this key is overwritten right away, but I must remember it is always created.
+        $return            = ['pc_balance' => '0', 'balance' => '0']; // this key is overwritten right away, but I must remember it is always created.
         // balance(s) in all currencies.
         $array             = $account
             ->transactions()
@@ -435,7 +437,7 @@ class Steam
         if ($cache->has()) {
             Log::debug('Return cached finalAccountBalanceInRange');
 
-            // return $cache->get();
+            return $cache->get();
         }
 
         $balances             = [];
@@ -458,7 +460,7 @@ class Steam
             Log::debug(sprintf('Also set start balance in %s', $primaryCurrency->code));
             $startBalance[$primaryCurrency->code] ??= '0';
         }
-        $currencies           = [$currency->id        => $currency, $primaryCurrency->id => $primaryCurrency];
+        $currencies           = [$currency->id => $currency, $primaryCurrency->id => $primaryCurrency];
 
         $balances[$formatted] = $startBalance;
         Log::debug('Final start balance: ', $startBalance);
@@ -469,12 +471,12 @@ class Steam
             ->transactions()
             ->leftJoin('transaction_journals', 'transactions.transaction_journal_id', '=', 'transaction_journals.id')
             ->where('transaction_journals.date', '>=', $start->format('Y-m-d H:i:s'))
-            ->where('transaction_journals.date', '<=', $end->format('Y-m-d  H:i:s'))
+            ->where('transaction_journals.date', '<=', $end->format('Y-m-d H:i:s'))
             ->groupBy('transaction_journals.date')
             ->groupBy('transactions.transaction_currency_id')
             ->orderBy('transaction_journals.date', 'ASC')
             ->whereNull('transaction_journals.deleted_at')
-            ->get(['transaction_journals.date', 'transactions.transaction_currency_id', DB::raw('SUM(transactions.amount) AS sum_of_day')]) // @phpstan-ignore-line
+            ->get(['transaction_journals.date', 'transactions.transaction_currency_id', DB::raw('SUM(transactions.amount) AS sum_of_day')])
         ;
 
         $currentBalance       = $startBalance;
@@ -618,7 +620,7 @@ class Steam
             ->transactions()
             ->whereIn('transactions.account_id', $accounts)
             ->groupBy(['transactions.account_id', 'transaction_journals.user_id'])
-            ->get(['transactions.account_id', DB::raw('MAX(transaction_journals.date) AS max_date')]) // @phpstan-ignore-line
+            ->get(['transactions.account_id', DB::raw('MAX(transaction_journals.date) AS max_date')])
         ;
 
         /** @var Transaction $entry */
@@ -827,7 +829,7 @@ class Steam
         $currencies[$primary->id] = $primary;
 
         $ids                      = $accounts->pluck('id')->toArray();
-        $result                   = AccountMeta::whereIn('account_id', $ids)->where('name', 'currency_id')->get();
+        $result                   = AccountMeta::query()->whereIn('account_id', $ids)->where('name', 'currency_id')->get();
 
         /** @var AccountMeta $item */
         foreach ($result as $item) {
@@ -837,7 +839,7 @@ class Steam
             }
         }
         // collect those currencies, skip primary because we already have it.
-        $set                      = TransactionCurrency::whereIn('id', $accountPreferences)->where('id', '!=', $primary->id)->get();
+        $set                      = TransactionCurrency::query()->whereIn('id', $accountPreferences)->where('id', '!=', $primary->id)->get();
         foreach ($set as $item) {
             $currencies[$item->id] = $item;
         }
@@ -845,7 +847,7 @@ class Steam
         /** @var Account $account */
         foreach ($accounts as $account) {
             $accountId       = $account->id;
-            $currencyPresent = isset($account->meta) && array_key_exists('currency', $account->meta) && null !== $account->meta['currency'];
+            $currencyPresent = property_exists($account, 'meta') && array_key_exists('currency', $account->meta) && null !== $account->meta['currency'];
             if ($currencyPresent) {
                 $currencyId                    = $account->meta['currency']->id;
                 $currencies[$currencyId] ??= $account->meta['currency'];

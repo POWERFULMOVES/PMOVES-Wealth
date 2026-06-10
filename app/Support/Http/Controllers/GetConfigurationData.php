@@ -98,8 +98,10 @@ trait GetConfigurationData
         $title          = sprintf('%s - %s', $start->isoFormat($this->monthAndDayFormat), $end->isoFormat($this->monthAndDayFormat));
         $isCustom       = true === session('is_custom_range', false);
         $today          = today(config('app.timezone'));
-        $ranges         = [// first range is the current range:
-            $title   => [$start, $end]];
+        $ranges         = [
+            // first range is the current range:
+            $title => [$start, $end],
+        ];
         Log::debug(sprintf('dateRange: the date range in the session is"%s" - "%s"', $start->format('Y-m-d'), $end->format('Y-m-d')));
 
         // when current range is a custom range, add the current period as the next range.
@@ -157,7 +159,7 @@ trait GetConfigurationData
 
         // previous year:
         $yearBegin      = today(config('app.timezone'))->subYear()->startOfYear();
-        $index          = (string) trans('firefly.previous_year', ['year'          => $yearBegin->year]);
+        $index          = (string) trans('firefly.previous_year', ['year' => $yearBegin->year]);
         $ranges[$index] = [$yearBegin, $yearBegin->clone()->endOfYear()];
 
         // everything
@@ -219,7 +221,7 @@ trait GetConfigurationData
 
             return;
         }
-        if (($now - $lastTime) > 129600) {
+        if (($now - $lastTime) > 129_600) {
             request()->session()->flash('warning', trans('firefly.recurring_cron_long_ago'));
         }
     }

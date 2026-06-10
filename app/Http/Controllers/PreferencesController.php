@@ -40,7 +40,6 @@ use FireflyIII\User;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use JsonException;
@@ -52,7 +51,7 @@ use function Safe\json_decode;
 /**
  * Class PreferencesController.
  */
-class PreferencesController extends Controller
+final class PreferencesController extends Controller
 {
     /**
      * PreferencesController constructor.
@@ -86,7 +85,7 @@ class PreferencesController extends Controller
             AccountTypeEnum::DEBT->value,
             AccountTypeEnum::MORTGAGE->value,
         ]);
-        $isDocker                       = env('IS_DOCKER', false); // @phpstan-ignore-line
+        $isDocker                       = config('firefly.is_docker');
         $groupedAccounts                = [];
 
         /** @var Account $account */
@@ -227,13 +226,13 @@ class PreferencesController extends Controller
      * @SuppressWarnings("PHPMD.ExcessiveMethodLength")
      * @SuppressWarnings("PHPMD.NPathComplexity")
      */
-    public function postIndex(PreferencesRequest $request): Redirector|RedirectResponse
+    public function postIndex(PreferencesRequest $request): RedirectResponse
     {
         Log::debug('postIndex for preferences.');
         // front page accounts
         $frontpageAccounts = [];
-        if (is_array($request->get('frontpageAccounts')) && count($request->get('frontpageAccounts')) > 0) {
-            foreach ($request->get('frontpageAccounts') as $id) {
+        if (is_array($request->input('frontpageAccounts')) && count($request->input('frontpageAccounts')) > 0) {
+            foreach ($request->input('frontpageAccounts') as $id) {
                 $frontpageAccounts[] = (int) $id;
             }
             Log::debug('Update frontpageAccounts', $frontpageAccounts);
@@ -241,22 +240,26 @@ class PreferencesController extends Controller
         }
 
         // extract notifications:
-        $all               = $request->all();
+        $keys              = array_map(function (string $value): string {
+            return sprintf('notification_%s', $value);
+        }, array_keys(config('notifications.notifications.user')));
+        $all               = $request->only($keys);
         foreach (config('notifications.notifications.user') as $key => $info) {
             $key = sprintf('notification_%s', $key);
-            if (array_key_exists($key, $all)) {
+            if (array_key_exists($key, $all) && false === auth()->user()->hasRole('demo')) {
                 Log::debug(sprintf('update notification to true: %s', $key));
                 Preferences::set($key, true);
+
+                continue;
             }
-            if (!array_key_exists($key, $all)) {
-                Log::debug(sprintf('update notification to false: %s', $key));
-                Preferences::set($key, false);
-            }
+            Log::debug(sprintf('update notification to false: %s', $key));
+            Preferences::set($key, false);
         }
+        unset($all);
 
         // view range:
-        Log::debug(sprintf('Let viewRange to "%s"', $request->get('viewRange')));
-        Preferences::set('viewRange', $request->get('viewRange'));
+        Log::debug(sprintf('Let viewRange to "%s"', $request->input('viewRange')));
+        Preferences::set('viewRange', $request->input('viewRange'));
         // forget session values:
         session()->forget('start');
         session()->forget('end');
@@ -265,19 +268,21 @@ class PreferencesController extends Controller
         // notification settings, cannot be set by the demo user.
         if (!auth()->user()->hasRole('demo')) {
             $variables = ['slack_webhook_url', 'pushover_app_token', 'pushover_user_token', 'ntfy_server', 'ntfy_topic', 'ntfy_user', 'ntfy_pass'];
+            $all       = $request->only($variables);
             foreach ($variables as $variable) {
-                if ('' === $all[$variable]) {
+                if (!array_key_exists($variable, $all) || '' === $all[$variable]) {
                     Preferences::delete($variable);
                 }
-                if ('' !== $all[$variable]) {
+                if (array_key_exists($variable, $all) && '' !== $all[$variable]) {
                     Preferences::setEncrypted($variable, $all[$variable]);
                 }
             }
             Preferences::set('ntfy_auth', $all['ntfy_auth'] ?? false);
         }
+        unset($all);
 
         // convert primary
-        $convertToPrimary  = 1 === (int) $request->get('convertToPrimary');
+        $convertToPrimary  = 1 === (int) $request->input('convertToPrimary');
         if ($convertToPrimary && !$this->convertToPrimary) {
             // set to true!
             Log::debug('User sets convertToPrimary to true.');
@@ -289,9 +294,9 @@ class PreferencesController extends Controller
         Preferences::set('convert_to_primary', $convertToPrimary);
 
         // custom fiscal year
-        $customFiscalYear  = 1 === (int) $request->get('customFiscalYear');
+        $customFiscalYear  = 1 === (int) $request->input('customFiscalYear');
         Preferences::set('customFiscalYear', $customFiscalYear);
-        $fiscalYearString  = (string) $request->get('fiscalYearStart');
+        $fiscalYearString  = (string) $request->input('fiscalYearStart');
         if ('' !== $fiscalYearString) {
             $fiscalYearStart = Carbon::parse($fiscalYearString, config('app.timezone'))->format('m-d');
             Preferences::set('fiscalYearStart', $fiscalYearStart);
@@ -299,7 +304,7 @@ class PreferencesController extends Controller
 
         // save page size:
         Preferences::set('listPageSize', 50);
-        $listPageSize      = (int) $request->get('listPageSize');
+        $listPageSize      = (int) $request->input('listPageSize');
         if ($listPageSize > 0 && $listPageSize < 1337) {
             Preferences::set('listPageSize', $listPageSize);
         }
@@ -307,7 +312,7 @@ class PreferencesController extends Controller
         // language:
         /** @var Preference $currentLang */
         $currentLang       = Preferences::get('language', 'en_US');
-        $lang              = $request->get('language');
+        $lang              = $request->input('language');
         if (array_key_exists($lang, config('firefly.languages'))) {
             Preferences::set('language', $lang);
         }
@@ -318,13 +323,13 @@ class PreferencesController extends Controller
 
         // same for locale:
         if (!auth()->user()->hasRole('demo')) {
-            $locale = (string) $request->get('locale');
+            $locale = (string) $request->input('locale');
             $locale = '' === $locale ? null : $locale;
             Preferences::set('locale', $locale);
         }
 
         // optional fields for transactions:
-        $setOptions        = $request->get('tj') ?? [];
+        $setOptions        = $request->input('tj') ?? [];
         $optionalTj        = [
             'interest_date'      => array_key_exists('interest_date', $setOptions),
             'book_date'          => array_key_exists('book_date', $setOptions),
@@ -342,13 +347,13 @@ class PreferencesController extends Controller
         Preferences::set('transaction_journal_optional_fields', $optionalTj);
 
         // dark mode
-        $darkMode          = $request->get('darkMode') ?? 'browser';
+        $darkMode          = $request->input('darkMode') ?? 'browser';
         if (in_array($darkMode, config('firefly.available_dark_modes'), true)) {
             Preferences::set('darkMode', $darkMode);
         }
 
         // anonymous amounts?
-        $anonymous         = '1' === $request->get('anonymous');
+        $anonymous         = '1' === $request->input('anonymous');
         Preferences::set('anonymous', $anonymous);
 
         // save and continue
@@ -361,8 +366,14 @@ class PreferencesController extends Controller
 
     public function testNotification(Request $request): mixed
     {
-        $all     = $request->all();
+        $all     = $request->only(['channel']);
         $channel = $all['channel'] ?? '';
+
+        if (true === auth()->user()->hasRole('demo')) {
+            session()->flash('error', (string) trans('firefly.not_available_demo_user'));
+
+            return redirect(route('preferences.index'));
+        }
 
         switch ($channel) {
             default:

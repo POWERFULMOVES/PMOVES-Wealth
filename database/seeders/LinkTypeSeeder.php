@@ -25,6 +25,7 @@ namespace Database\Seeders;
 
 use FireflyIII\Models\LinkType;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Log;
 use PDOException;
 
 /**
@@ -35,17 +36,17 @@ class LinkTypeSeeder extends Seeder
     public function run(): void
     {
         $types = [
-            ['name'     => 'Related', 'inward'   => 'relates to', 'outward'  => 'relates to', 'editable' => false],
-            ['name'     => 'Refund', 'inward'   => 'is (partially) refunded by', 'outward'  => '(partially) refunds', 'editable' => false],
-            ['name'     => 'Paid', 'inward'   => 'is (partially) paid for by', 'outward'  => '(partially) pays for', 'editable' => false],
-            ['name'     => 'Reimbursement', 'inward'   => 'is (partially) reimbursed by', 'outward'  => '(partially) reimburses', 'editable' => false]
+            ['name' => 'Related', 'inward' => 'relates to', 'outward' => 'relates to', 'editable' => false],
+            ['name' => 'Refund', 'inward' => 'is (partially) refunded by', 'outward' => '(partially) refunds', 'editable' => false],
+            ['name' => 'Paid', 'inward' => 'is (partially) paid for by', 'outward' => '(partially) pays for', 'editable' => false],
+            ['name' => 'Reimbursement', 'inward' => 'is (partially) reimbursed by', 'outward' => '(partially) reimburses', 'editable' => false]
         ];
         foreach ($types as $type) {
-            if (null === LinkType::where('name', $type['name'])->first()) {
+            if (null === LinkType::query()->where('name', $type['name'])->first()) {
                 try {
                     LinkType::create($type);
-                } catch (PDOException $e) {
-                    // @ignoreException
+                } catch (PDOException) {
+                    Log::debug(sprintf('Link type with name "%s" already exists and that is OK.', $type['name']));
                 }
             }
         }

@@ -27,6 +27,7 @@ namespace Database\Seeders;
 use FireflyIII\Enums\UserRoleEnum;
 use FireflyIII\Models\UserRole;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Log;
 use PDOException;
 
 /**
@@ -40,12 +41,12 @@ class UserRoleSeeder extends Seeder
     public function run(): void
     {
         /** @var UserRoleEnum $role */
-        foreach (UserRoleEnum::cases() as $role) { // @phpstan-ignore-line
-            if (null === UserRole::where('title', $role->value)->first()) {
+        foreach (UserRoleEnum::cases() as $role) {
+            if (null === UserRole::query()->where('title', $role->value)->first()) {
                 try {
                     UserRole::create(['title' => $role->value]);
-                } catch (PDOException $e) {
-                    // @ignoreException
+                } catch (PDOException) {
+                    Log::debug(sprintf('User role with title "%s" already exists and that is OK', $role->value));
                 }
             }
         }

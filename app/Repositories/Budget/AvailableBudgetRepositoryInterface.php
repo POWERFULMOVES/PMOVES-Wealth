@@ -63,6 +63,11 @@ interface AvailableBudgetRepositoryInterface
     public function findById(int $id): ?AvailableBudget;
 
     /**
+     * Find existing ABs in this exact time range.
+     */
+    public function findInRange(TransactionCurrency $currency, Carbon $start, Carbon $end): Collection;
+
+    /**
      * Return a list of all available budgets (in all currencies) (for the selected period).
      */
     public function get(?Carbon $start = null, ?Carbon $end = null): Collection;

@@ -111,6 +111,11 @@ class JournalUpdateService
         $this->transactionGroupRepository = app(TransactionGroupRepositoryInterface::class);
     }
 
+    public function getTransactionJournal(): ?TransactionJournal
+    {
+        return $this->transactionJournal;
+    }
+
     public function isCompareHashChanged(): bool
     {
         Log::debug(sprintf('Now in %s', __METHOD__));
@@ -203,11 +208,7 @@ class JournalUpdateService
     {
         if (!$this->destinationTransaction instanceof Transaction) {
             /** @var null|Transaction $result */
-            $result                       = $this->transactionJournal
-                ->transactions()
-                ->where('amount', '>', 0)
-                ->first()
-            ;
+            $result                       = $this->transactionJournal->transactions()->where('amount', '>', 0)->first();
             $this->destinationTransaction = $result;
         }
 
@@ -255,12 +256,7 @@ class JournalUpdateService
     {
         if (!$this->sourceTransaction instanceof Transaction) {
             /** @var null|Transaction $result */
-            $result                  = $this->transactionJournal
-                ->transactions()
-                ->with(['account'])
-                ->where('amount', '<', 0)
-                ->first()
-            ;
+            $result                  = $this->transactionJournal->transactions()->with(['account'])->where('amount', '<', 0)->first();
             $this->sourceTransaction = $result;
         }
         Log::debug(sprintf('getSourceTransaction: %s', $this->sourceTransaction->amount));
@@ -370,7 +366,7 @@ class JournalUpdateService
         $validator->setTransactionType($expectedType);
         $validator->setUser($this->transactionJournal->user);
         $validator->source = $this->getValidSourceAccount();
-        $result            = $validator->validateDestination(['id'   => $destId, 'name' => $destName]);
+        $result            = $validator->validateDestination(['id' => $destId, 'name' => $destName]);
         Log::debug(sprintf('hasValidDestinationAccount(%d, "%s") will return %s', $destId, $destName, var_export($result, true)));
 
         // TODO typeOverrule: the account validator may have another opinion on the transaction type.
@@ -401,7 +397,7 @@ class JournalUpdateService
         $validator->setTransactionType($expectedType);
         $validator->setUser($this->transactionJournal->user);
 
-        $result       = $validator->validateSource(['id'   => $sourceId, 'name' => $sourceName]);
+        $result       = $validator->validateSource(['id' => $sourceId, 'name' => $sourceName]);
         Log::debug(sprintf('hasValidSourceAccount(%d, "%s") will return %s', $sourceId, $sourceName, var_export($result, true)));
 
         // TODO type overrule the account validator may have a different opinion on the transaction type.
@@ -413,18 +409,10 @@ class JournalUpdateService
     private function isBetweenAssetAndLiability(): bool
     {
         /** @var null|Transaction $sourceTransaction */
-        $sourceTransaction      = $this->transactionJournal
-            ->transactions()
-            ->where('amount', '<', 0)
-            ->first()
-        ;
+        $sourceTransaction      = $this->transactionJournal->transactions()->where('amount', '<', 0)->first();
 
         /** @var null|Transaction $destinationTransaction */
-        $destinationTransaction = $this->transactionJournal
-            ->transactions()
-            ->where('amount', '>', 0)
-            ->first()
-        ;
+        $destinationTransaction = $this->transactionJournal->transactions()->where('amount', '>', 0)->first();
         if (null === $sourceTransaction || null === $destinationTransaction) {
             Log::warning('Either transaction is false, stop.');
 
@@ -551,14 +539,14 @@ class JournalUpdateService
         event(
             new TransactionGroupRequestsAuditLogEntry(
                 $group->user,
-                $group,
+                $this->transactionJournal,
                 'update_amount',
                 [
                     'currency_symbol' => $recordCurrency->symbol,
                     'decimal_places'  => $recordCurrency->decimal_places,
                     'amount'          => $originalSourceAmount,
                 ],
-                ['currency_symbol' => $recordCurrency->symbol, 'decimal_places'  => $recordCurrency->decimal_places, 'amount'          => $value]
+                ['currency_symbol' => $recordCurrency->symbol, 'decimal_places' => $recordCurrency->decimal_places, 'amount' => $value]
             )
         );
     }
@@ -633,6 +621,9 @@ class JournalUpdateService
      */
     private function updateField(string $fieldName): void
     {
+        if (null === $this->transactionJournal) {
+            return;
+        }
         if (array_key_exists($fieldName, $this->data) && '' !== (string) $this->data[$fieldName]) {
             $value                                  = $this->data[$fieldName];
 
@@ -655,7 +646,7 @@ class JournalUpdateService
 
                 /** @var TransactionJournalMetaFactory $factory */
                 $factory                           = app(TransactionJournalMetaFactory::class);
-                $set                               = ['journal' => $this->transactionJournal, 'name'    => '_internal_previous_date', 'data'    => null];
+                $set                               = ['journal' => $this->transactionJournal, 'name' => '_internal_previous_date', 'data' => null];
                 if ($res) {
                     Log::debug('Transaction is set to be AFTER its current date. Save also the "_internal_previous_date"-field.');
                     $set['data'] = clone $this->transactionJournal->date;
@@ -675,7 +666,7 @@ class JournalUpdateService
                 )
             );
 
-            $this->transactionJournal->{$fieldName} = $value; // @phpstan-ignore-line
+            $this->transactionJournal->{$fieldName} = $value;
             Log::debug(sprintf('Updated %s', $fieldName));
         }
     }
@@ -692,6 +683,7 @@ class JournalUpdateService
         $source               = $this->getSourceTransaction();
         $dest                 = $this->getDestinationTransaction();
         $foreignCurrency      = $source->foreignCurrency;
+        $oldForeignCurrency   = $foreignCurrency;
         $originalSourceAmount = $source->foreign_amount;
 
         // find currency in data array
@@ -749,12 +741,12 @@ class JournalUpdateService
             if (null === $group || null === $this->transactionJournal) {
                 return;
             }
-            if (0 === bccomp($source->foreign_amount, $foreignAmount)) {
+            if (0 === bccomp(Steam::positive($originalSourceAmount), Steam::positive($foreignAmount))) {
                 Log::debug('Amount was not actually changed, return.');
 
                 return;
             }
-            Log::debug('Amount was changed, needs audit log entry.');
+            Log::debug(sprintf('Amount was changed (%s -> %s), needs audit log entry.', $originalSourceAmount, $foreignAmount));
             $transfer                    = TransactionTypeEnum::TRANSFER->value === $this->transactionJournal->transactionType->type;
             // $withdrawal           = TransactionTypeEnum::WITHDRAWAL->value === $this->transactionJournal->transactionType->type;
             $deposit                     = TransactionTypeEnum::DEPOSIT->value === $this->transactionJournal->transactionType->type;
@@ -767,14 +759,18 @@ class JournalUpdateService
             event(
                 new TransactionGroupRequestsAuditLogEntry(
                     $group->user,
-                    $group,
+                    $this->transactionJournal,
                     'update_foreign_amount',
+                    [
+                        'currency_symbol' => $oldForeignCurrency?->symbol,
+                        'decimal_places'  => $oldForeignCurrency?->decimal_places,
+                        'amount'          => $originalSourceAmount,
+                    ],
                     [
                         'currency_symbol' => $recordCurrency->symbol,
                         'decimal_places'  => $recordCurrency->decimal_places,
-                        'amount'          => $originalSourceAmount,
-                    ],
-                    ['currency_symbol' => $recordCurrency->symbol, 'decimal_places'  => $recordCurrency->decimal_places, 'amount'          => $value]
+                        'amount'          => $value,
+                    ]
                 )
             );
         }
@@ -822,16 +818,16 @@ class JournalUpdateService
             if ($this->hasFields([$field])) {
                 try {
                     $value = '' === (string) $this->data[$field] ? null : new Carbon($this->data[$field]);
-                } catch (InvalidDateException|InvalidFormatException $e) { // @phpstan-ignore-line
+                } catch (InvalidDateException|InvalidFormatException $e) {
                     Log::debug(sprintf('%s is not a valid date value: %s', $this->data[$field], $e->getMessage()));
 
                     return;
                 }
                 Log::debug(sprintf('Field "%s" is present ("%s"), try to update it.', $field, $value));
-                $set = ['journal' => $this->transactionJournal, 'name'    => $field, 'data'    => $value];
+                $set = ['journal' => $this->transactionJournal, 'name' => $field, 'data' => $value];
                 $factory->updateOrCreate($set);
                 // also set date with timezone.
-                $set = ['journal' => $this->transactionJournal, 'name'    => sprintf('%s_tz', $field), 'data'    => $value?->format('e')];
+                $set = ['journal' => $this->transactionJournal, 'name' => sprintf('%s_tz', $field), 'data' => $value?->format('e')];
                 $factory->updateOrCreate($set);
             }
         }
@@ -846,7 +842,7 @@ class JournalUpdateService
             if ($this->hasFields([$field])) {
                 $value = '' === $this->data[$field] ? null : $this->data[$field];
                 Log::debug(sprintf('Field "%s" is present ("%s"), try to update it.', $field, $value));
-                $set   = ['journal' => $this->transactionJournal, 'name'    => $field, 'data'    => $value];
+                $set   = ['journal' => $this->transactionJournal, 'name' => $field, 'data' => $value];
                 $factory->updateOrCreate($set);
             }
         }

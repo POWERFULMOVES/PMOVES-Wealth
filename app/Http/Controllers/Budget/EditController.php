@@ -42,7 +42,7 @@ use Illuminate\View\View;
 /**
  * Class EditController
  */
-class EditController extends Controller
+final class EditController extends Controller
 {
     private AttachmentHelperInterface $attachments;
     private BudgetRepositoryInterface $repository;
@@ -71,7 +71,7 @@ class EditController extends Controller
      */
     public function edit(Request $request, Budget $budget): Factory|\Illuminate\Contracts\View\View
     {
-        $subTitle          = (string) trans('firefly.edit_budget', ['name'   => $budget->name]);
+        $subTitle          = (string) trans('firefly.edit_budget', ['name' => $budget->name]);
         $autoBudget        = $this->repository->getAutoBudget($budget);
 
         // auto budget types

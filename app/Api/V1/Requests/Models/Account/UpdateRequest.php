@@ -33,7 +33,7 @@ use FireflyIII\Rules\UniqueIban;
 use FireflyIII\Support\Request\AppendsLocationData;
 use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
-use Illuminate\Contracts\Validation\Validator;
+use FireflyIII\Validation\FireflyValidator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Log;
 
@@ -45,6 +45,8 @@ class UpdateRequest extends FormRequest
     use AppendsLocationData;
     use ChecksLogin;
     use ConvertsDataTypes;
+
+    protected array $acceptedRoles = [];
 
     public function getUpdateData(): array
     {
@@ -93,24 +95,24 @@ class UpdateRequest extends FormRequest
             'name'                 => sprintf('min:1|max:1024|uniqueAccountForUser:%d', $account->id),
             'type'                 => sprintf('in:%s', $types),
             'iban'                 => ['iban', 'nullable', new UniqueIban($account, $this->convertString('type'))],
-            'bic'                  => 'bic|nullable',
+            'bic'                  => ['bic', 'nullable'],
             'account_number'       => ['min:1', 'max:255', 'nullable', new UniqueAccountNumber($account, $this->convertString('type'))],
-            'opening_balance'      => 'numeric|required_with:opening_balance_date|nullable',
-            'opening_balance_date' => 'date|required_with:opening_balance|nullable',
-            'virtual_balance'      => 'numeric|nullable',
-            'order'                => 'numeric|nullable',
-            'currency_id'          => 'numeric|exists:transaction_currencies,id',
-            'currency_code'        => 'min:3|max:51|exists:transaction_currencies,code',
+            'opening_balance'      => ['numeric', 'required_with:opening_balance_date', 'nullable'],
+            'opening_balance_date' => ['date', 'required_with:opening_balance', 'nullable'],
+            'virtual_balance'      => ['numeric', 'nullable'],
+            'order'                => ['numeric', 'nullable'],
+            'currency_id'          => ['numeric', 'exists:transaction_currencies,id'],
+            'currency_code'        => ['min:3', 'max:51', 'exists:transaction_currencies,code'],
             'active'               => [new IsBoolean()],
             'include_net_worth'    => [new IsBoolean()],
             'account_role'         => sprintf('in:%s|nullable|required_if:type,asset', $accountRoles),
             'credit_card_type'     => sprintf('in:%s|nullable|required_if:account_role,ccAsset', $ccPaymentTypes),
-            'monthly_payment_date' => 'date|nullable|required_if:account_role,ccAsset|required_if:credit_card_type,monthlyFull',
-            'liability_type'       => 'required_if:type,liability|in:loan,debt,mortgage',
-            'liability_direction'  => 'required_if:type,liability|in:credit,debit',
-            'interest'             => 'required_if:type,liability|min:0|max:100|numeric',
-            'interest_period'      => 'required_if:type,liability|in:daily,monthly,yearly',
-            'notes'                => 'min:0|max:32768',
+            'monthly_payment_date' => ['date', 'nullable', 'required_if:account_role,ccAsset', 'required_if:credit_card_type,monthlyFull'],
+            'liability_type'       => ['required_if:type,liability', 'in:loan,debt,mortgage'],
+            'liability_direction'  => ['required_if:type,liability', 'in:credit,debit'],
+            'interest'             => ['required_if:type,liability', 'min:0', 'max:100', 'numeric'],
+            'interest_period'      => ['required_if:type,liability', 'in:daily,monthly,yearly'],
+            'notes'                => ['min:0', 'max:32768'],
         ];
 
         return Location::requestRules($rules);
@@ -119,9 +121,9 @@ class UpdateRequest extends FormRequest
     /**
      * Configure the validator instance with special rules for after the basic validation rules.
      */
-    public function withValidator(Validator $validator): void
+    public function withValidator(FireflyValidator $validator): void
     {
-        $validator->after(function (Validator $validator): void {
+        $validator->after(function (FireflyValidator $validator): void {
             // validate start before end only if both are there.
             $data       = $validator->getData();
 

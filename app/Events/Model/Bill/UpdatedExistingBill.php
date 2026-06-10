@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 /*
- * BalancePolicy.php
- * Copyright (c) 2024 james@firefly-iii.org.
+ * UpdatedExistingBill.php
+ * Copyright (c) 2026 james@firefly-iii.org
  *
  * This file is part of Firefly III (https://github.com/firefly-iii).
  *
@@ -17,31 +19,24 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see https://www.gnu.org/licenses/.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-declare(strict_types=1);
+namespace FireflyIII\Events\Model\Bill;
 
-namespace FireflyIII\Policies;
+use FireflyIII\Events\Event;
+use FireflyIII\Models\Bill;
+use Illuminate\Queue\SerializesModels;
 
-use FireflyIII\Models\Account;
-use FireflyIII\User;
-
-class BalancePolicy
+class UpdatedExistingBill extends Event
 {
-    /**
-     * TODO needs better authentication.
-     */
-    public function view(User $user, Account $account): bool
-    {
-        return auth()->check() && $user->id === $account->user_id;
-    }
+    use SerializesModels;
 
     /**
-     * Everybody can do this, but selection should limit to user.
+     * Create a new event instance.
      */
-    public function viewAny(): bool
-    {
-        return auth()->check();
-    }
+    public function __construct(
+        public Bill $bill,
+        public array $oldData
+    ) {}
 }

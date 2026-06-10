@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Api\V1\Controllers\Chart;
 
+use Carbon\Carbon;
 use FireflyIII\Api\V1\Controllers\Controller;
 use FireflyIII\Api\V1\Requests\Chart\ChartRequest;
 use FireflyIII\Enums\UserRoleEnum;
@@ -43,7 +44,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Class AccountController
  */
-class AccountController extends Controller
+final class AccountController extends Controller
 {
     use ApiSupport;
     use CleansChartData;
@@ -142,23 +143,29 @@ class AccountController extends Controller
         }
         // create array of values to collect.
 
+        $rangeDates        = array_map(static fn (string $d): Carbon => Carbon::createFromFormat('Y-m-d', $d)->startOfDay(), array_keys($range));
+        $rangeVals         = array_values($range);
+        $rangeIdx          = 0;
+        $rangeCount        = count($rangeDates);
+
         while ($currentStart <= $params['end']) {
-            $format                        = $currentStart->format('Y-m-d');
             $label                         = $currentStart->toAtomString();
-            $balance                       = array_key_exists($format, $range) ? $range[$format]['balance'] : $previous;
-            $previous                      = $balance;
-            $currentSet['entries'][$label] = $balance;
 
-            // do the same for the primary currency balance, if relevant:
-            $pcBalance                     = null;
-            if ($this->convertToPrimary) {
-                $pcBalance                        = array_key_exists($format, $range) ? $range[$format]['pc_balance'] : $pcPrevious;
-                $pcPrevious                       = $pcBalance;
-                $currentSet['pc_entries'][$label] = $pcBalance;
+            // Advance through all range entries up to current chart date
+            while ($rangeIdx < $rangeCount && $rangeDates[$rangeIdx] <= $currentStart) {
+                $previous = $rangeVals[$rangeIdx]['balance'];
+                if ($this->convertToPrimary) {
+                    $pcPrevious = $rangeVals[$rangeIdx]['pc_balance'];
+                }
+                ++$rangeIdx;
             }
-            $currentStart                  = Navigation::addPeriod($currentStart, $period);
 
-            // $currentStart->addDay();
+            $currentSet['entries'][$label] = $previous;
+            if ($this->convertToPrimary) {
+                $currentSet['pc_entries'][$label] = $pcPrevious;
+            }
+
+            $currentStart                  = Navigation::addPeriod($currentStart, $period);
         }
         $this->chartData[] = $currentSet;
     }

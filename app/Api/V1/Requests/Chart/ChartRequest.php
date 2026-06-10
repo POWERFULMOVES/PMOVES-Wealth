@@ -28,7 +28,7 @@ use FireflyIII\Enums\UserRoleEnum;
 use FireflyIII\Support\Http\Api\ValidatesUserGroupTrait;
 use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
-use Illuminate\Contracts\Validation\Validator;
+use FireflyIII\Validation\FireflyValidator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Log;
 
@@ -60,18 +60,18 @@ class ChartRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'start'       => 'required|date|after:1970-01-02|before:2038-01-17|before_or_equal:end',
-            'end'         => 'required|date|after:1970-01-02|before:2038-01-17|after_or_equal:start',
+            'start'       => ['required', 'date', 'after:1970-01-02', 'before:2038-01-17', 'before_or_equal:end'],
+            'end'         => ['required', 'date', 'after:1970-01-02', 'before:2038-01-17', 'after_or_equal:start'],
             'preselected' => sprintf('nullable|in:%s', implode(',', config('firefly.preselected_accounts'))),
             'period'      => sprintf('nullable|in:%s', implode(',', config('firefly.valid_view_ranges'))),
-            'accounts'    => 'nullable|array',
+            'accounts'    => ['nullable', 'array'],
             'accounts.*'  => 'exists:accounts,id',
         ];
     }
 
-    public function withValidator(Validator $validator): void
+    public function withValidator(FireflyValidator $validator): void
     {
-        $validator->after(static function (Validator $validator): void {
+        $validator->after(static function (FireflyValidator $validator): void {
             // validate transaction query data.
             $data = $validator->getData();
             if (!array_key_exists('accounts', $data)) {

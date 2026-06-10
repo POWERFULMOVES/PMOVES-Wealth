@@ -45,6 +45,8 @@ class GenericRequest extends FormRequest
     use ChecksLogin;
     use ConvertsDataTypes;
 
+    protected array $acceptedRoles = [];
+
     private Collection $accounts;
     private Collection $bills;
     private Collection $budgets;
@@ -56,7 +58,7 @@ class GenericRequest extends FormRequest
      */
     public function getAll(): array
     {
-        return ['start' => $this->getCarbonDate('start'), 'end'   => $this->getCarbonDate('end')];
+        return ['start' => $this->getCarbonDate('start'), 'end' => $this->getCarbonDate('end')];
     }
 
     public function getAssetAccounts(): Collection
@@ -70,7 +72,7 @@ class GenericRequest extends FormRequest
             if (in_array(
                 $type,
                 [AccountTypeEnum::ASSET->value, AccountTypeEnum::LOAN->value, AccountTypeEnum::DEBT->value, AccountTypeEnum::MORTGAGE->value],
-                true
+                strict: true
             )) {
                 $return->push($account);
             }
@@ -167,7 +169,7 @@ class GenericRequest extends FormRequest
         $this->bills      = new Collection();
         $this->tags       = new Collection();
 
-        return ['start' => 'required|date', 'end'   => 'required|date|after_or_equal:start'];
+        return ['start' => ['required', 'date'], 'end' => ['required', 'date', 'after_or_equal:start']];
     }
 
     private function parseAccounts(): void

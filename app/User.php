@@ -68,12 +68,17 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Str;
+use Laravel\Passport\Contracts\OAuthenticatable;
 use Laravel\Passport\HasApiTokens;
 use NotificationChannels\Pushover\PushoverReceiver;
 use SensitiveParameter;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-class User extends Authenticatable
+/**
+ * @property null|UserGroup $userGroup
+ * @property bool           $blocked
+ */
+class User extends Authenticatable implements OAuthenticatable
 {
     use HasApiTokens;
     use Notifiable;
@@ -102,9 +107,6 @@ class User extends Authenticatable
         throw new NotFoundHttpException();
     }
 
-    /**
-     * Link to accounts.
-     */
     public function accounts(): HasMany
     {
         return $this->hasMany(Account::class);
@@ -319,7 +321,7 @@ class User extends Authenticatable
     {
         $method = 'routeNotificationFor'.Str::studly($driver);
         if (method_exists($this, $method)) {
-            return $this->{$method}($notification); // @phpstan-ignore-line
+            return $this->{$method}($notification);
         }
         $email  = $this->email;
         // see if user has alternative email address:
@@ -476,7 +478,7 @@ class User extends Authenticatable
 
     protected function casts(): array
     {
-        return ['created_at' => 'datetime', 'updated_at' => 'datetime', 'blocked'    => 'boolean'];
+        return ['created_at' => 'datetime', 'updated_at' => 'datetime', 'blocked' => 'boolean'];
     }
 
     /**
@@ -487,7 +489,7 @@ class User extends Authenticatable
         Log::debug(sprintf('in hasAnyRoleInGroup(%s)', implode(', ', $roles)));
 
         /** @var Collection $dbRoles */
-        $dbRoles          = UserRole::whereIn('title', $roles)->get();
+        $dbRoles          = UserRole::query()->whereIn('title', $roles)->get();
         if (0 === $dbRoles->count()) {
             Log::error(sprintf('Could not find role(s): %s. Probably migration mishap.', implode(', ', $roles)));
 
@@ -496,12 +498,7 @@ class User extends Authenticatable
         $dbRolesIds       = $dbRoles->pluck('id')->toArray();
         $dbRolesTitles    = $dbRoles->pluck('title')->toArray();
 
-        $groupMemberships = $this
-            ->groupMemberships()
-            ->whereIn('user_role_id', $dbRolesIds)
-            ->where('user_group_id', $userGroup->id)
-            ->get()
-        ;
+        $groupMemberships = $this->groupMemberships()->whereIn('user_role_id', $dbRolesIds)->where('user_group_id', $userGroup->id)->get();
         if (0 === $groupMemberships->count()) {
             Log::error(sprintf(
                 'User #%d "%s" does not have roles %s in user group #%d "%s"',
@@ -523,7 +520,7 @@ class User extends Authenticatable
                 $userGroup->id,
                 $userGroup->title
             ));
-            if (in_array($membership->userRole->title, $dbRolesTitles, true)) {
+            if (in_array($membership->userRole->title, $dbRolesTitles, strict: true)) {
                 Log::debug(sprintf('Return true, found role "%s"', $membership->userRole->title));
 
                 return true;

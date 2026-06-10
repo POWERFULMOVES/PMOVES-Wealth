@@ -120,7 +120,7 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface, UserGroupInte
 
         $disk = Storage::disk('upload');
 
-        return $set->each(static function (Attachment $attachment) use ($disk): Attachment { // @phpstan-ignore-line
+        return $set->each(static function (Attachment $attachment) use ($disk): Attachment {
             $notes                   = $attachment->notes()->first();
             $attachment->file_exists = $disk->exists($attachment->fileName());
             $attachment->notes_text  = null !== $notes ? $notes->text : '';
@@ -143,7 +143,13 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface, UserGroupInte
             $amount = '' === $amount ? '0' : $amount;
             $sum    = bcadd($sum, $amount);
         }
-        Log::debug(sprintf('Current amount in piggy bank #%d ("%s") is %s', $piggyBank->id, $piggyBank->name, $sum));
+        Log::debug(sprintf(
+            'Current amount (at %s) in piggy bank #%d ("%s") is %s',
+            now(config('app.timezone'))->toW3cString(),
+            $piggyBank->id,
+            $piggyBank->name,
+            $sum
+        ));
 
         return $sum;
     }
@@ -233,11 +239,11 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface, UserGroupInte
         $amount          = null;
         if ((int) $source->transaction_currency_id === $currency->id) {
             Log::debug('Use normal amount');
-            $amount = Steam::{$operator}($source->amount); // @phpstan-ignore-line
+            $amount = Steam::{$operator}($source->amount);
         }
         if ((int) $source->foreign_currency_id === $currency->id) {
             Log::debug('Use foreign amount');
-            $amount = Steam::{$operator}($source->foreign_amount); // @phpstan-ignore-line
+            $amount = Steam::{$operator}($source->foreign_amount);
         }
         if (null === $amount) {
             Log::debug('No match on currency, so amount remains null, return "0".');
@@ -337,33 +343,6 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface, UserGroupInte
     }
 
     /**
-     * Returns the suggested amount the user should save per month, or "".
-     */
-    public function getSuggestedMonthlyAmount(PiggyBank $piggyBank): string
-    {
-        $savePerMonth  = '0';
-        $currentAmount = $this->getCurrentAmount($piggyBank);
-        if (null !== $piggyBank->target_date && $currentAmount < $piggyBank->target_amount) {
-            $now             = today(config('app.timezone'));
-            $startDate       = null !== $piggyBank->start_date && $piggyBank->start_date->gte($now) ? $piggyBank->start_date : $now;
-            $diffInMonths    = (int) $startDate->diffInMonths($piggyBank->target_date);
-            $remainingAmount = bcsub((string) $piggyBank->target_amount, $currentAmount);
-
-            // more than 1 month to go and still need money to save:
-            if ($diffInMonths > 0 && 1 === bccomp($remainingAmount, '0')) {
-                $savePerMonth = bcdiv($remainingAmount, (string) $diffInMonths);
-            }
-
-            // less than 1 month to go but still need money to save:
-            if (0 === $diffInMonths && 1 === bccomp($remainingAmount, '0')) {
-                $savePerMonth = $remainingAmount;
-            }
-        }
-
-        return $savePerMonth;
-    }
-
-    /**
      * Get for piggy account what is left to put in piggies.
      */
     public function leftOnAccount(PiggyBank $piggyBank, Account $account, Carbon $date): string
@@ -393,7 +372,8 @@ class PiggyBankRepository implements PiggyBankRepositoryInterface, UserGroupInte
     #[Override]
     public function purgeAll(): void
     {
-        PiggyBank::withTrashed()
+        PiggyBank::query()
+            ->withTrashed()
             ->whereNotNull('piggy_banks.deleted_at')
             ->leftJoin('account_piggy_bank', 'account_piggy_bank.piggy_bank_id', '=', 'piggy_banks.id')
             ->leftJoin('accounts', 'accounts.id', '=', 'account_piggy_bank.account_id')

@@ -110,20 +110,20 @@ class UpgradesBillsToRules extends Command
             'active'          => true,
             'strict'          => false,
             'stop_processing' => false, // field is no longer used.
-            'title'           => (string) trans('firefly.rule_for_bill_title', ['name'       => $bill->name], $languageString),
+            'title'           => (string) trans('firefly.rule_for_bill_title', ['name' => $bill->name], $languageString),
             'description'     => (string) trans('firefly.rule_for_bill_description', ['name' => $bill->name], $languageString),
             'trigger'         => 'store-journal',
-            'triggers'        => [['type'  => 'description_contains', 'value' => $match]],
-            'actions'         => [['type'  => 'link_to_bill', 'value' => $bill->name]],
+            'triggers'        => [['type' => 'description_contains', 'value' => $match]],
+            'actions'         => [['type' => 'link_to_bill', 'value' => $bill->name]],
         ];
 
         // two triggers or one, depends on bill content:
         if ($bill->amount_max === $bill->amount_min) {
-            $newRule['triggers'][] = ['type'  => 'amount_exactly', 'value' => $bill->amount_min];
+            $newRule['triggers'][] = ['type' => 'amount_exactly', 'value' => $bill->amount_min];
         }
         if ($bill->amount_max !== $bill->amount_min) {
-            $newRule['triggers'][] = ['type'  => 'amount_less', 'value' => $bill->amount_max];
-            $newRule['triggers'][] = ['type'  => 'amount_more', 'value' => $bill->amount_min];
+            $newRule['triggers'][] = ['type' => 'amount_less', 'value' => $bill->amount_max];
+            $newRule['triggers'][] = ['type' => 'amount_more', 'value' => $bill->amount_min];
         }
 
         $this->ruleRepository->store($newRule);

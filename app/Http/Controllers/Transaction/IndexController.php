@@ -41,7 +41,7 @@ use Psr\Container\NotFoundExceptionInterface;
 /**
  * Class IndexController
  */
-class IndexController extends Controller
+final class IndexController extends Controller
 {
     use PeriodOverview;
 
@@ -98,15 +98,16 @@ class IndexController extends Controller
         [$start, $end] = $end < $start ? [$end, $start] : [$start, $end];
         $startStr      = $start->isoFormat($this->monthAndDayFormat);
         $endStr        = $end->isoFormat($this->monthAndDayFormat);
-        $subTitle      = (string) trans(sprintf('firefly.title_%s_between', $objectType), ['start' => $startStr, 'end'   => $endStr]);
+        $subTitle      = (string) trans(sprintf('firefly.title_%s_between', $objectType), ['start' => $startStr, 'end' => $endStr]);
         $path          = route('transactions.index', [$objectType, $start->format('Y-m-d'), $end->format('Y-m-d')]);
         $firstJournal  = $this->repository->firstNull();
         $startPeriod   = $firstJournal instanceof TransactionJournal ? $firstJournal->date : new Carbon();
         $endPeriod     = clone $end;
-
-        // limit to 3 years for the time being.
-        if (now()->diffInYears($startPeriod, true) > 3) {
-            $startPeriod = now()->subYears(3);
+        $endPeriod->endOfDay();
+        // limit to 6 years for the time being.
+        $max           = 6;
+        if (now()->diffInYears($startPeriod, true) > $max) {
+            $startPeriod = now()->subYears($max);
         }
 
         $periods       = $this->getTransactionPeriodOverview($objectType, $startPeriod, $endPeriod);

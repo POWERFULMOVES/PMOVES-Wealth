@@ -59,7 +59,7 @@ class AccountTasker implements AccountTaskerInterface, UserGroupInterface
         $repository          = app(AccountRepositoryInterface::class);
         $primaryCurrency     = Amount::getPrimaryCurrencyByUserGroup($this->user->userGroup);
 
-        $return              = ['accounts' => [], 'sums'     => []];
+        $return              = ['accounts' => [], 'sums' => []];
 
         /** @var Account $account */
         foreach ($accounts as $account) {
@@ -178,8 +178,8 @@ class AccountTasker implements AccountTaskerInterface, UserGroupInterface
 
         /** @var CurrencyRepositoryInterface $currencyRepos */
         $currencyRepos   = app(CurrencyRepositoryInterface::class);
-        $currencies      = [$primaryCurrency->id    => $primaryCurrency];
-        $report          = ['accounts' => [], 'sums'     => []];
+        $currencies      = [$primaryCurrency->id => $primaryCurrency];
+        $report          = ['accounts' => [], 'sums' => []];
 
         /** @var array $journal */
         foreach ($array as $journal) {
@@ -232,8 +232,8 @@ class AccountTasker implements AccountTaskerInterface, UserGroupInterface
 
         /** @var CurrencyRepositoryInterface $currencyRepos */
         $currencyRepos   = app(CurrencyRepositoryInterface::class);
-        $currencies      = [$primaryCurrency->id    => $primaryCurrency];
-        $report          = ['accounts' => [], 'sums'     => []];
+        $currencies      = [$primaryCurrency->id => $primaryCurrency];
+        $report          = ['accounts' => [], 'sums' => []];
 
         /** @var array $journal */
         foreach ($array as $journal) {

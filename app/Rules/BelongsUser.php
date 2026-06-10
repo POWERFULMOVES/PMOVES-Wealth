@@ -33,6 +33,7 @@ use FireflyIII\Models\Category;
 use FireflyIII\Models\PiggyBank;
 use FireflyIII\Models\TransactionJournal;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -51,16 +52,16 @@ class BelongsUser implements ValidationRule
         Log::debug(sprintf('Going to validate %s', $attribute));
 
         $result    = match ($attribute) {
-            'piggy_bank_id'          => $this->validatePiggyBankId((int) $value),
-            'piggy_bank_name'        => $this->validatePiggyBankName($value),
-            'bill_id'                => $this->validateBillId((int) $value),
-            'transaction_journal_id' => $this->validateJournalId((int) $value),
-            'bill_name'              => $this->validateBillName($value),
-            'budget_id'              => $this->validateBudgetId((int) $value),
-            'category_id'            => $this->validateCategoryId((int) $value),
-            'budget_name'            => $this->validateBudgetName($value),
+            'piggy_bank_id'               => $this->validatePiggyBankId((int) $value),
+            'piggy_bank_name'             => $this->validatePiggyBankName($value),
+            'bill_id'                     => $this->validateBillId((int) $value),
+            'transaction_journal_id'      => $this->validateJournalId((int) $value),
+            'bill_name'                   => $this->validateBillName($value),
+            'budget_id'                   => $this->validateBudgetId((int) $value),
+            'category_id'                 => $this->validateCategoryId((int) $value),
+            'budget_name'                 => $this->validateBudgetName($value),
             'source_id', 'destination_id' => $this->validateAccountId((int) $value),
-            default                  => throw new FireflyException(sprintf('Rule BelongsUser cannot handle "%s"', $attribute))
+            default                       => throw new FireflyException(sprintf('Rule BelongsUser cannot handle "%s"', $attribute))
         };
         if (false === $result) {
             $fail('validation.belongs_user')->translate();
@@ -81,8 +82,10 @@ class BelongsUser implements ValidationRule
             $objects = $class::where('user_id', '=', auth()->user()->id)->get();
         }
         $count   = 0;
+
+        /** @var Model $object */
         foreach ($objects as $object) {
-            $objectValue = trim((string) $object->{$field}); // @phpstan-ignore-line
+            $objectValue = trim((string) $object->{$field});
             Log::debug(sprintf('Comparing object "%s" with value "%s"', $objectValue, $value));
             if ($objectValue === $value) {
                 ++$count;
@@ -112,7 +115,7 @@ class BelongsUser implements ValidationRule
             // its ok to submit 0. other checks will fail.
             return true;
         }
-        $count = Account::where('id', '=', $value)->where('user_id', '=', auth()->user()->id)->count();
+        $count = Account::query()->where('id', '=', $value)->where('user_id', '=', auth()->user()->id)->count();
 
         return 1 === $count;
     }
@@ -122,7 +125,7 @@ class BelongsUser implements ValidationRule
         if (0 === $value) {
             return true;
         }
-        $count = Bill::where('id', '=', $value)->where('user_id', '=', auth()->user()->id)->count();
+        $count = Bill::query()->where('id', '=', $value)->where('user_id', '=', auth()->user()->id)->count();
 
         return 1 === $count;
     }
@@ -140,7 +143,7 @@ class BelongsUser implements ValidationRule
         if (0 === $value) {
             return true;
         }
-        $count = Budget::where('id', '=', $value)->where('user_id', '=', auth()->user()->id)->count();
+        $count = Budget::query()->where('id', '=', $value)->where('user_id', '=', auth()->user()->id)->count();
 
         return 1 === $count;
     }
@@ -154,7 +157,7 @@ class BelongsUser implements ValidationRule
 
     private function validateCategoryId(int $value): bool
     {
-        $count = Category::where('id', '=', $value)->where('user_id', '=', auth()->user()->id)->count();
+        $count = Category::query()->where('id', '=', $value)->where('user_id', '=', auth()->user()->id)->count();
 
         return 1 === $count;
     }
@@ -164,7 +167,7 @@ class BelongsUser implements ValidationRule
         if (0 === $value) {
             return true;
         }
-        $count = TransactionJournal::where('id', '=', $value)->where('user_id', '=', auth()->user()->id)->count();
+        $count = TransactionJournal::query()->where('id', '=', $value)->where('user_id', '=', auth()->user()->id)->count();
 
         return 1 === $count;
     }

@@ -119,11 +119,7 @@ class RecurringEnrichment implements EnrichmentInterface
         if ('weekly' === $repetition->repetition_type) {
             $dayOfWeek = trans(sprintf('config.dow_%s', $repetition->repetition_moment), [], $this->language);
             if ($repetition->repetition_skip > 0) {
-                return (string) trans(
-                    'firefly.recurring_weekly_skip',
-                    ['weekday' => $dayOfWeek, 'skip'    => $repetition->repetition_skip + 1],
-                    $this->language
-                );
+                return (string) trans('firefly.recurring_weekly_skip', ['weekday' => $dayOfWeek, 'skip' => $repetition->repetition_skip + 1], $this->language);
             }
 
             return (string) trans('firefly.recurring_weekly', ['weekday' => $dayOfWeek], $this->language);
@@ -132,14 +128,14 @@ class RecurringEnrichment implements EnrichmentInterface
             if ($repetition->repetition_skip > 0) {
                 return (string) trans(
                     'firefly.recurring_monthly_skip',
-                    ['dayOfMonth' => $repetition->repetition_moment, 'skip'       => $repetition->repetition_skip + 1],
+                    ['dayOfMonth' => $repetition->repetition_moment, 'skip' => $repetition->repetition_skip + 1],
                     $this->language
                 );
             }
 
             return (string) trans(
                 'firefly.recurring_monthly',
-                ['dayOfMonth' => $repetition->repetition_moment, 'skip'       => $repetition->repetition_skip - 1],
+                ['dayOfMonth' => $repetition->repetition_moment, 'skip' => $repetition->repetition_skip - 1],
                 $this->language
             );
         }
@@ -150,12 +146,12 @@ class RecurringEnrichment implements EnrichmentInterface
             if ($repetition->repetition_skip > 0) {
                 return (string) trans(
                     'firefly.recurring_ndom_skip',
-                    ['skip'       => $repetition->repetition_skip, 'weekday'    => $dayOfWeek, 'dayOfMonth' => $parts[0]],
+                    ['skip' => $repetition->repetition_skip, 'weekday' => $dayOfWeek, 'dayOfMonth' => $parts[0]],
                     $this->language
                 );
             }
 
-            return (string) trans('firefly.recurring_ndom', ['weekday'    => $dayOfWeek, 'dayOfMonth' => $parts[0]], $this->language);
+            return (string) trans('firefly.recurring_ndom', ['weekday' => $dayOfWeek, 'dayOfMonth' => $parts[0]], $this->language);
         }
         if ('yearly' === $repetition->repetition_type) {
             $today   = today(config('app.timezone'))->endOfYear();
@@ -204,7 +200,7 @@ class RecurringEnrichment implements EnrichmentInterface
     private function collectAccounts(): void
     {
         $all      = array_merge(array_unique($this->sourceAccountIds), array_unique($this->destinationAccountIds));
-        $accounts = Account::with(['accountType'])->whereIn('id', array_unique($all))->get();
+        $accounts = Account::query()->with(['accountType'])->whereIn('id', array_unique($all))->get();
 
         /** @var Account $account */
         foreach ($accounts as $account) {
@@ -220,7 +216,7 @@ class RecurringEnrichment implements EnrichmentInterface
             return;
         }
         $ids    = Arr::pluck($billIds, 'bill_id');
-        $bills  = Bill::whereIn('id', $ids)->get();
+        $bills  = Bill::query()->whereIn('id', $ids)->get();
         $mapped = [];
         foreach ($bills as $bill) {
             $mapped[(int) $bill->id] = $bill;
@@ -238,7 +234,7 @@ class RecurringEnrichment implements EnrichmentInterface
             return;
         }
         $ids        = Arr::pluck($budgetIds, 'budget_id');
-        $categories = Budget::whereIn('id', $ids)->get();
+        $categories = Budget::query()->whereIn('id', $ids)->get();
         $mapped     = [];
         foreach ($categories as $category) {
             $mapped[(int) $category->id] = $category;
@@ -256,7 +252,7 @@ class RecurringEnrichment implements EnrichmentInterface
             return;
         }
         $ids        = Arr::pluck($categoryIds, 'category_id');
-        $categories = Category::whereIn('id', $ids)->get();
+        $categories = Category::query()->whereIn('id', $ids)->get();
         $mapped     = [];
         foreach ($categories as $category) {
             $mapped[(int) $category->id] = $category;
@@ -292,7 +288,7 @@ class RecurringEnrichment implements EnrichmentInterface
     private function collectCurrencies(): void
     {
         $all        = array_merge(array_unique($this->currencyIds), array_unique($this->foreignCurrencyIds));
-        $currencies = TransactionCurrency::whereIn('id', array_unique($all))->get();
+        $currencies = TransactionCurrency::query()->whereIn('id', array_unique($all))->get();
         foreach ($currencies as $currency) {
             $id                    = (int) $currency->id;
             $this->currencies[$id] = $currency;
@@ -337,7 +333,7 @@ class RecurringEnrichment implements EnrichmentInterface
             return;
         }
         $ids        = Arr::pluck($piggyBankIds, 'piggy_bank_id');
-        $piggyBanks = PiggyBank::whereIn('id', $ids)->get();
+        $piggyBanks = PiggyBank::query()->whereIn('id', $ids)->get();
         $mapped     = [];
         foreach ($piggyBanks as $piggyBank) {
             $mapped[(int) $piggyBank->id] = $piggyBank;
@@ -354,7 +350,7 @@ class RecurringEnrichment implements EnrichmentInterface
         Log::debug('Start of enrichment: collectRepetitions()');
         $repository = app(RecurringRepositoryInterface::class);
         $repository->setUserGroup($this->userGroup);
-        $set        = RecurrenceRepetition::whereIn('recurrence_id', $this->ids)->get();
+        $set        = RecurrenceRepetition::query()->whereIn('recurrence_id', $this->ids)->get();
 
         /** @var RecurrenceRepetition $repetition */
         foreach ($set as $repetition) {
@@ -398,7 +394,7 @@ class RecurringEnrichment implements EnrichmentInterface
         foreach ($this->ids as $recurrenceId) {
             $rtIds = array_merge($rtIds, array_keys($this->transactions[$recurrenceId]));
         }
-        $meta          = RecurrenceTransactionMeta::whereNull('deleted_at')->whereIn('rt_id', $rtIds)->get();
+        $meta          = RecurrenceTransactionMeta::query()->whereNull('deleted_at')->whereIn('rt_id', $rtIds)->get();
         // other meta-data to be collected:
         $billIds       = [];
         $piggyBankIds  = [];
@@ -427,7 +423,7 @@ class RecurringEnrichment implements EnrichmentInterface
                     if ((int) $entry->value > 0) {
                         $this->transactions[$recurrenceId][$transactionId]['subscription_id'] = $entry->value;
                         if (!array_key_exists($id, $billIds)) {
-                            $billIds[$id] = ['recurrence_id'  => $recurrenceId, 'transaction_id' => $transactionId, 'bill_id'        => (int) $entry->value];
+                            $billIds[$id] = ['recurrence_id' => $recurrenceId, 'transaction_id' => $transactionId, 'bill_id' => (int) $entry->value];
                         }
                     }
 
@@ -470,7 +466,7 @@ class RecurringEnrichment implements EnrichmentInterface
                     if ('' !== (string) $entry->value) {
                         $this->transactions[$recurrenceId][$transactionId]['category_name'] = (string) $entry->value;
                         if (!array_key_exists($id, $categoryIds)) {
-                            $categoryNames[$id] = ['recurrence_id'  => $recurrenceId, 'transaction_id' => $transactionId, 'category_name'  => $entry->value];
+                            $categoryNames[$id] = ['recurrence_id' => $recurrenceId, 'transaction_id' => $transactionId, 'category_name' => $entry->value];
                         }
                     }
 
@@ -480,7 +476,7 @@ class RecurringEnrichment implements EnrichmentInterface
                     if ((int) $entry->value > 0) {
                         $this->transactions[$recurrenceId][$transactionId]['budget_id'] = (string) $entry->value;
                         if (!array_key_exists($id, $budgetIds)) {
-                            $budgetIds[$id] = ['recurrence_id'  => $recurrenceId, 'transaction_id' => $transactionId, 'budget_id'      => (int) $entry->value];
+                            $budgetIds[$id] = ['recurrence_id' => $recurrenceId, 'transaction_id' => $transactionId, 'budget_id' => (int) $entry->value];
                         }
                     }
 
@@ -496,7 +492,7 @@ class RecurringEnrichment implements EnrichmentInterface
 
     private function collectTransactions(): void
     {
-        $set = RecurrenceTransaction::whereIn('recurrence_id', $this->ids)->get();
+        $set = RecurrenceTransaction::query()->whereIn('recurrence_id', $this->ids)->get();
 
         /** @var RecurrenceTransaction $transaction */
         foreach ($set as $transaction) {

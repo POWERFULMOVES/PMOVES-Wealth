@@ -39,7 +39,6 @@ use FireflyIII\User;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Redirector;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
 use League\Fractal\Manager;
@@ -52,7 +51,7 @@ use Symfony\Component\HttpFoundation\ParameterBag;
 /**
  * Class ShowController
  */
-class ShowController extends Controller
+final class ShowController extends Controller
 {
     private BillRepositoryInterface $repository;
 
@@ -77,7 +76,7 @@ class ShowController extends Controller
     /**
      * Rescan bills for transactions.
      */
-    public function rescan(Request $request, Bill $bill): Redirector|RedirectResponse
+    public function rescan(Request $request, Bill $bill): RedirectResponse
     {
         $total      = 0;
         if (false === $bill->active) {

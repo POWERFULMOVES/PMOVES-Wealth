@@ -58,7 +58,7 @@ use Illuminate\View\View;
  *
  * TODO when converting a split transfer, all sources and destinations must be the same.
  */
-class ConvertController extends Controller
+final class ConvertController extends Controller
 {
     use ModelInformation;
 
@@ -84,7 +84,7 @@ class ConvertController extends Controller
     /**
      * Show overview of a to be converted transaction.
      *
-     * @return Factory|Redirector|RedirectResponse|View
+     * @return Factory|RedirectResponse|View
      *
      * @throws Exception
      */
@@ -103,7 +103,7 @@ class ConvertController extends Controller
 
         $groupTitle           = $group->title ?? $first->description;
         $groupArray           = $transformer->transformObject($group);
-        $subTitle             = (string) trans('firefly.convert_to_'.$destinationType->type, ['description'     => $groupTitle]);
+        $subTitle             = (string) trans('firefly.convert_to_'.$destinationType->type, ['description' => $groupTitle]);
         $subTitleIcon         = 'fa-exchange';
 
         // get a list of asset accounts and liabilities and stuff, in various combinations:
@@ -141,7 +141,7 @@ class ConvertController extends Controller
     /**
      * Do the conversion.
      *
-     * @return Redirector|RedirectResponse
+     * @return RedirectResponse
      */
     public function postIndex(Request $request, TransactionType $destinationType, TransactionGroup $group)
     {
@@ -153,7 +153,7 @@ class ConvertController extends Controller
         foreach ($group->transactionJournals as $journal) {
             // catch FF exception.
             try {
-                $this->convertJournal($journal, $destinationType, $request->all());
+                $this->convertJournal($journal, $destinationType, $request->only(['source_id', 'source_name', 'destination_id', 'destination_name']));
             } catch (FireflyException $e) {
                 session()->flash('error', $e->getMessage());
 
@@ -193,8 +193,8 @@ class ConvertController extends Controller
         $sourceName        = '' === $sourceName ? null : (string) $sourceName;
         $destinationId     = '' === $destinationId || null === $destinationId ? null : (int) $destinationId;
         $destinationName   = '' === $destinationName ? null : (string) $destinationName;
-        $validSource       = $validator->validateSource(['id'   => $sourceId, 'name' => $sourceName]);
-        $validDestination  = $validator->validateDestination(['id'   => $destinationId, 'name' => $destinationName]);
+        $validSource       = $validator->validateSource(['id' => $sourceId, 'name' => $sourceName]);
+        $validDestination  = $validator->validateDestination(['id' => $destinationId, 'name' => $destinationName]);
 
         if (false === $validSource) {
             throw new FireflyException(sprintf(trans('firefly.convert_invalid_source'), $journal->id));

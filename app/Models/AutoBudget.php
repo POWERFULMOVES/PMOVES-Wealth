@@ -24,7 +24,6 @@ declare(strict_types=1);
 
 namespace FireflyIII\Models;
 
-use Deprecated;
 use FireflyIII\Handlers\Observer\AutoBudgetObserver;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -33,26 +32,21 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property TransactionCurrency $transactionCurrency
+ */
 #[ObservedBy([AutoBudgetObserver::class])]
 class AutoBudget extends Model
 {
     use ReturnsIntegerIdTrait;
     use SoftDeletes;
 
-    /** @deprecated */
-    #[Deprecated]
-    public const int AUTO_BUDGET_ADJUSTED = 3;
+    protected function casts(): array
+    {
+        return ['amount' => 'string', 'native_amount' => 'string'];
+    }
 
-    /** @deprecated */
-    #[Deprecated]
-    public const int AUTO_BUDGET_RESET    = 1;
-
-    /** @deprecated */
-    #[Deprecated]
-    public const int AUTO_BUDGET_ROLLOVER = 2;
-
-    protected $casts                      = ['amount'        => 'string', 'native_amount' => 'string'];
-    protected $fillable                   = ['budget_id', 'amount', 'period', 'native_amount'];
+    protected $fillable = ['budget_id', 'amount', 'period', 'native_amount'];
 
     public function budget(): BelongsTo
     {
@@ -72,13 +66,6 @@ class AutoBudget extends Model
     protected function budgetId(): Attribute
     {
         return Attribute::make(get: static fn ($value): int => (int) $value);
-    }
-
-    protected function casts(): array
-    {
-        return [
-            // 'auto_budget_type' => AutoBudgetType::class,
-        ];
     }
 
     protected function transactionCurrencyId(): Attribute

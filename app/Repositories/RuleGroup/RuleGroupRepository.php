@@ -115,20 +115,12 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface, UserGroupInte
     public function findByTitle(string $title): ?RuleGroup
     {
         /** @var null|RuleGroup */
-        return $this->user
-            ->ruleGroups()
-            ->where('title', $title)
-            ->first()
-        ;
+        return $this->user->ruleGroups()->where('title', $title)->first();
     }
 
     public function get(): Collection
     {
-        return $this->user
-            ->ruleGroups()
-            ->orderBy('order', 'ASC')
-            ->get()
-        ;
+        return $this->user->ruleGroups()->orderBy('order', 'ASC')->get();
     }
 
     public function getActiveGroups(): Collection
@@ -177,7 +169,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface, UserGroupInte
         $groups = $this->user
             ->ruleGroups()
             ->orderBy('order', 'ASC')
-            ->with([ // @phpstan-ignore-line
+            ->with([
                 'rules'              => static function (HasMany $query): void {
                     $query->orderBy('order', 'ASC');
 
@@ -197,7 +189,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface, UserGroupInte
         }
         // Log::debug(sprintf('Will filter getRuleGroupsWithRules on "%s".', $filter));
 
-        return $groups->map(static function (RuleGroup $group) use ($filter): RuleGroup { // @phpstan-ignore-line
+        return $groups->map(static function (RuleGroup $group) use ($filter): RuleGroup {
             //            Log::debug(sprintf('Now filtering group #%d', $group->id));
             // filter the rules in the rule group:
             $group->rules = $group->rules->filter(static function (Rule $rule) use ($filter): bool {
@@ -231,7 +223,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface, UserGroupInte
             ->ruleGroups()
             ->orderBy('order', 'ASC')
             ->where('active', true)
-            ->with([ // @phpstan-ignore-line
+            ->with([
                 'rules'              => static function (HasMany $query): void {
                     $query->orderBy('order', 'ASC');
                     $query->where('rules.active', true);
@@ -250,7 +242,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface, UserGroupInte
         }
         Log::debug(sprintf('Will filter getRuleGroupsWithRules on "%s".', $filter));
 
-        return $groups->map(static function (RuleGroup $group) use ($filter): RuleGroup { // @phpstan-ignore-line
+        return $groups->map(static function (RuleGroup $group) use ($filter): RuleGroup {
             //            Log::debug(sprintf('Now filtering group #%d', $group->id));
             // filter the rules in the rule group:
             $group->rules = $group->rules->filter(static function (Rule $rule) use ($filter): bool {
@@ -278,11 +270,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface, UserGroupInte
 
     public function maxOrder(): int
     {
-        return (int) $this->user
-            ->ruleGroups()
-            ->where('active', true)
-            ->max('order')
-        ;
+        return (int) $this->user->ruleGroups()->where('active', true)->max('order');
     }
 
     public function resetOrder(): bool
@@ -382,7 +370,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface, UserGroupInte
             'user_group_id' => $this->user->user_group_id,
             'title'         => $data['title'],
             'description'   => $data['description'],
-            'order'         => 31337,
+            'order'         => 31_337,
             'active'        => array_key_exists('active', $data) ? $data['active'] : true,
         ]);
         $newRuleGroup->save();

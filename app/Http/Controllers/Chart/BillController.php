@@ -36,7 +36,7 @@ use Illuminate\Http\JsonResponse;
 /**
  * Class BillController.
  */
-class BillController extends Controller
+final class BillController extends Controller
 {
     protected GeneratorInterface $generator;
 
@@ -73,8 +73,8 @@ class BillController extends Controller
          */
         foreach ($paid as $info) {
             $amount            = $info['sum'];
-            $label             = (string) trans('firefly.paid_in_currency', ['currency'             => $info['name']]);
-            $chartData[$label] = ['amount'          => $amount, 'currency_symbol' => $info['symbol'], 'currency_code'   => $info['code']];
+            $label             = (string) trans('firefly.paid_in_currency', ['currency' => $info['name']]);
+            $chartData[$label] = ['amount' => $amount, 'currency_symbol' => $info['symbol'], 'currency_code' => $info['code']];
         }
 
         /**
@@ -82,8 +82,8 @@ class BillController extends Controller
          */
         foreach ($unpaid as $info) {
             $amount            = $info['sum'];
-            $label             = (string) trans('firefly.unpaid_in_currency', ['currency'             => $info['name']]);
-            $chartData[$label] = ['amount'          => $amount, 'currency_symbol' => $info['symbol'], 'currency_code'   => $info['code']];
+            $label             = (string) trans('firefly.unpaid_in_currency', ['currency' => $info['name']]);
+            $chartData[$label] = ['amount' => $amount, 'currency_symbol' => $info['symbol'], 'currency_code' => $info['code']];
         }
 
         $data      = $this->generator->multiCurrencyPieChart($chartData);

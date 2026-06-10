@@ -40,7 +40,7 @@ use League\Fractal\Resource\Collection as FractalCollection;
 /**
  * Class ListController
  */
-class ListController extends Controller
+final class ListController extends Controller
 {
     use TransactionFilter;
 
@@ -83,6 +83,9 @@ class ListController extends Controller
         // use new group collector:
         /** @var GroupCollectorInterface $collector */
         $collector    = app(GroupCollectorInterface::class);
+        if (0 === count($journalIds)) {
+            $collector->findNothing();
+        }
         $collector
             ->setUser($admin)
             // filter on journal IDs.

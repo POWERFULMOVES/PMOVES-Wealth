@@ -34,13 +34,13 @@ trait SupportsGroupProcessingTrait
             return;
         }
 
-        $array               = $set->pluck('id')->toArray();
+        $array               = array_unique($set->pluck('id')->toArray());
 
         /** @var TransactionJournal $first */
         $first               = $set->first();
         $journalIds          = implode(',', $array);
         $user                = $first->user;
-        // Log::debug(sprintf('Add local operator for journal(s): %s', $journalIds));
+        Log::debug(sprintf('Fire rule engine for journal(s): %s', $journalIds));
 
         // collect rules:
         $ruleGroupRepository = app(RuleGroupRepositoryInterface::class);
@@ -54,9 +54,14 @@ trait SupportsGroupProcessingTrait
         // create and fire rule engine.
         $newRuleEngine       = app(RuleEngineInterface::class);
         $newRuleEngine->setUser($user);
-        $newRuleEngine->addOperator(['type'  => 'journal_id', 'value' => $journalIds]);
         $newRuleEngine->setRuleGroups($groups);
-        $newRuleEngine->fire();
+        foreach ($array as $journalId) {
+            Log::debug(sprintf('Fire rule engine for journal #%d', $journalId));
+            $newRuleEngine->removeOperator('journal_id');
+            $newRuleEngine->addOperator(['type' => 'journal_id', 'value' => $journalId]);
+            $newRuleEngine->fire();
+        }
+
         Log::debug(sprintf('Done with processRules("%s") for %d journal(s)', $type, $set->count()));
     }
 
@@ -104,21 +109,13 @@ trait SupportsGroupProcessingTrait
         $repository->deleteStatisticsForType(Category::class, $objects->categories, $dates);
         $repository->deleteStatisticsForType(Tag::class, $objects->tags, $dates);
 
-        // remove if no stuff present:
-        // remove for no tag, no cat, etc.
-        if (0 === $objects->budgets->count()) {
-            Log::debug('No budgets, delete "no_category" stats.');
-            $repository->deleteStatisticsForPrefix('no_budget', $dates);
-        }
-        if (0 === $objects->categories->count()) {
-            Log::debug('No categories, delete "no_category" stats.');
-            $repository->deleteStatisticsForPrefix('no_category', $dates);
-        }
-        if (0 === $objects->tags->count()) {
-            Log::debug('No tags, delete "no_category" stats.');
-            $repository->deleteStatisticsForPrefix('no_tag', $dates);
-        }
-        Log::debug('Done with remove period statistics for all objects.');
+        // remove generic statistics:
+        $repository->deleteStatisticsForPrefix('all_', $dates);
+
+        // ALWAYS remove for no tag, no cat, etc.
+        $repository->deleteStatisticsForPrefix('no_budget', $dates);
+        $repository->deleteStatisticsForPrefix('no_category', $dates);
+        $repository->deleteStatisticsForPrefix('no_tag', $dates);
     }
 
     private function collectDatesFromJournals(Collection $journals): Collection
@@ -159,7 +156,7 @@ trait SupportsGroupProcessingTrait
 
     private function getFromInternalDate(array $ids): Carbon
     {
-        $entries = TransactionJournalMeta::whereIn('transaction_journal_id', $ids)->where('name', '_internal_previous_date')->get(['journal_meta.*']);
+        $entries = TransactionJournalMeta::query()->whereIn('transaction_journal_id', $ids)->where('name', '_internal_previous_date')->get(['journal_meta.*']);
         $array   = $entries->toArray();
         $return  = today()->subDay();
         if (count($array) > 0) {

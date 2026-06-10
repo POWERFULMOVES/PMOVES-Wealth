@@ -33,6 +33,8 @@ return [
     'admin_test_subject'                         => 'A test message from your Firefly III installation',
     'admin_test_body'                            => 'This is a test message from your Firefly III instance. It was sent to :email.',
     'admin_test_message'                         => 'This is a test message from your Firefly III instance over channel ":channel".',
+    'admin_test_link'                            => 'The following link should point to your Firefly III installation. It should be correctly adorned with "http" or "https". If not, please set your `APP_URL` environment variable: [:link](:link)',
+    'firefly_iii_url'                            => 'Firefly III',
 
     // invite
     'invitation_created_subject'                 => 'An invitation has been created',
@@ -60,13 +62,13 @@ return [
 
     // unknown user login attempt
     'unknown_user_subject'                       => 'An unknown user tried to log in',
-    'unknown_user_body'                          => 'An unknown user (:ip) tried to log in to Firefly III. The email address they used was ":address".',
-    'unknown_user_message'                       => 'The email address they (:ip) used was ":address".',
+    'unknown_user_body'                          => 'An unknown user (`:ip`) tried to log in to Firefly III. The email address they used was `:address`.',
+    'unknown_user_message'                       => 'The email address they (`:ip`) used was `:address`.',
 
     // known user login attempt
     'failed_login_subject'                       => 'Firefly III detected a failed login attempt',
-    'failed_login_body'                          => 'Firefly III detected that somebody (you?) failed to login with your account ":email". Please verify that this was you.',
-    'failed_login_message'                       => 'A failed login attempt (:ip) on your Firefly III account ":email" was detected.',
+    'failed_login_body'                          => 'Firefly III detected that somebody (you?) failed to login with your account `:email`. Please verify that this was you.',
+    'failed_login_message'                       => 'A failed login attempt (`:ip`) on your Firefly III account `:email` was detected.',
     'failed_login_warning'                       => 'If you recognize this IP address or the login attempt, you can ignore this message. If you didn\'t try to login, of if you have no idea what this is about, verify your password security, change it, and log out all other sessions. To do this, go to your profile page. Of course you have 2FA enabled already, right? Stay safe!',
 
     // registered
@@ -168,7 +170,7 @@ return [
     'used_backup_code_subject'                   => 'You have used a back-up code to login',
     'used_backup_code_slack'                     => 'You (:email) have used a back-up code to login',
 
-    'used_backup_code_intro'                     => 'You (:email) have used a back-up code to login to Firefly III. You now have one less back-up code to login with. Please remove it from your list.',
+    'used_backup_code_intro'                     => 'You (:email) have used a back-up co    de to login to Firefly III. You now have one less back-up code to login with. Please remove it from your list.',
     'used_backup_code_warning'                   => 'If you did not do this, please contact your administrator immediately or check out the Firefly III documentation.',
 
     // few left:

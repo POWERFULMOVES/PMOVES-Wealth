@@ -86,8 +86,8 @@ class HandlesNewUserRegistration implements ShouldQueue
         $group               = null;
 
         // create a new group.
-        while ($groupExists) { // @phpstan-ignore-line
-            $groupExists = UserGroup::where('title', $groupTitle)->count() > 0;
+        while ($groupExists) {
+            $groupExists = UserGroup::query()->where('title', $groupTitle)->count() > 0;
             if (false === $groupExists) {
                 $group = UserGroup::create(['title' => $groupTitle]);
 
@@ -101,11 +101,11 @@ class HandlesNewUserRegistration implements ShouldQueue
         }
 
         /** @var null|UserRole $role */
-        $role                = UserRole::where('title', UserRoleEnum::OWNER->value)->first();
+        $role                = UserRole::query()->where('title', UserRoleEnum::OWNER->value)->first();
         if (null === $role) {
             throw new FireflyException('The user role is unexpectedly empty. Did you run all migrations?');
         }
-        GroupMembership::create(['user_id'       => $user->id, 'user_group_id' => $group->id, 'user_role_id'  => $role->id]);
+        GroupMembership::create(['user_id' => $user->id, 'user_group_id' => $group->id, 'user_role_id' => $role->id]);
         $user->user_group_id = $group->id;
         $user->save();
     }

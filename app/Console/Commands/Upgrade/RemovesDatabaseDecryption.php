@@ -64,11 +64,7 @@ class RemovesDatabaseDecryption extends Command
             'journal_links'        => ['comment'],
         ];
 
-        /**
-         * @var string $table
-         * @var array  $fields
-         */
-        foreach ($tables as $table => $fields) { // @phpstan-ignore-line
+        foreach ($tables as $table => $fields) {
             $this->decryptTable($table, $fields);
         }
 
@@ -127,7 +123,7 @@ class RemovesDatabaseDecryption extends Command
         }
 
         // A separate routine for preferences table:
-        if ('preferences' === $table && is_string($value)) {
+        if ('preferences' === $table) {
             $this->decryptPreferencesRow($id, $value);
 
             return;

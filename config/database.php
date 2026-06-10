@@ -21,6 +21,7 @@
  */
 
 declare(strict_types=1);
+use Pdo\Mysql;
 
 use function Safe\parse_url;
 
@@ -41,50 +42,50 @@ if (false !== $databaseUrl) {
 }
 
 // Get SSL parameters from .env file.
-$mysql_ssl_ca_dir  = envNonEmpty('MYSQL_SSL_CAPATH');
-$mysql_ssl_ca_file = envNonEmpty('MYSQL_SSL_CA');
-$mysql_ssl_cert    = envNonEmpty('MYSQL_SSL_CERT');
-$mysql_ssl_key     = envNonEmpty('MYSQL_SSL_KEY');
-$mysql_ssl_ciphers = envNonEmpty('MYSQL_SSL_CIPHER');
-$mysql_ssl_verify  = envNonEmpty('MYSQL_SSL_VERIFY_SERVER_CERT');
+$mysql_ssl_ca_dir  = env('MYSQL_SSL_CAPATH');
+$mysql_ssl_ca_file = env('MYSQL_SSL_CA');
+$mysql_ssl_cert    = env('MYSQL_SSL_CERT');
+$mysql_ssl_key     = env('MYSQL_SSL_KEY');
+$mysql_ssl_ciphers = env('MYSQL_SSL_CIPHER');
+$mysql_ssl_verify  = env('MYSQL_SSL_VERIFY_SERVER_CERT');
 
 $mySqlSSLOptions   = [];
-$useSSL            = envNonEmpty('MYSQL_USE_SSL', false);
+$useSSL            = env_default_when_empty(env('MYSQL_USE_SSL'), false);
 if (false !== $useSSL && null !== $useSSL && '' !== $useSSL) {
     if (null !== $mysql_ssl_ca_dir) {
-        $mySqlSSLOptions[PDO::MYSQL_ATTR_SSL_CAPATH] = $mysql_ssl_ca_dir;
+        $mySqlSSLOptions[Mysql::ATTR_SSL_CAPATH] = $mysql_ssl_ca_dir;
     }
     if (null !== $mysql_ssl_ca_file) {
-        $mySqlSSLOptions[PDO::MYSQL_ATTR_SSL_CA] = $mysql_ssl_ca_file;
+        $mySqlSSLOptions[Mysql::ATTR_SSL_CA] = $mysql_ssl_ca_file;
     }
     if (null !== $mysql_ssl_cert) {
-        $mySqlSSLOptions[PDO::MYSQL_ATTR_SSL_CERT] = $mysql_ssl_cert;
+        $mySqlSSLOptions[Mysql::ATTR_SSL_CERT] = $mysql_ssl_cert;
     }
     if (null !== $mysql_ssl_key) {
-        $mySqlSSLOptions[PDO::MYSQL_ATTR_SSL_KEY] = $mysql_ssl_key;
+        $mySqlSSLOptions[Mysql::ATTR_SSL_KEY] = $mysql_ssl_key;
     }
     if (null !== $mysql_ssl_ciphers) {
-        $mySqlSSLOptions[PDO::MYSQL_ATTR_SSL_CIPHER] = $mysql_ssl_ciphers;
+        $mySqlSSLOptions[Mysql::ATTR_SSL_CIPHER] = $mysql_ssl_ciphers;
     }
     if (null !== $mysql_ssl_verify) {
-        $mySqlSSLOptions[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = $mysql_ssl_verify;
+        $mySqlSSLOptions[Mysql::ATTR_SSL_VERIFY_SERVER_CERT] = $mysql_ssl_verify;
     }
 }
 
 return [
-    'default'     => envNonEmpty('DB_CONNECTION', 'mysql'),
+    'default'     => env_default_when_empty(env('DB_CONNECTION'), 'mysql'),
     'connections' => [
         'sqlite' => [
             'driver'   => 'sqlite',
-            'database' => envNonEmpty('DB_DATABASE', storage_path('database/database.sqlite')),
+            'database' => env_default_when_empty(env('DB_DATABASE'), storage_path('database/database.sqlite')),
             'prefix'   => '',
         ],
         'mysql'  => [
             'driver'      => 'mysql',
-            'host'        => envNonEmpty('DB_HOST', $host),
-            'port'        => envNonEmpty('DB_PORT', $port),
-            'database'    => envNonEmpty('DB_DATABASE', $database),
-            'username'    => envNonEmpty('DB_USERNAME', $username),
+            'host'        => env_default_when_empty(env('DB_HOST'), $host),
+            'port'        => env_default_when_empty(env('DB_PORT'), $port),
+            'database'    => env_default_when_empty(env('DB_DATABASE'), $database),
+            'username'    => env_default_when_empty(env('DB_USERNAME'), $username),
             'password'    => env('DB_PASSWORD', $password),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset'     => 'utf8mb4',
@@ -96,19 +97,19 @@ return [
         ],
         'pgsql'  => [
             'driver'      => 'pgsql',
-            'host'        => envNonEmpty('DB_HOST', $host),
-            'port'        => envNonEmpty('DB_PORT', $port),
-            'database'    => envNonEmpty('DB_DATABASE', $database),
-            'username'    => envNonEmpty('DB_USERNAME', $username),
+            'host'        => env_default_when_empty(env('DB_HOST'), $host),
+            'port'        => env_default_when_empty(env('DB_PORT'), $port),
+            'database'    => env_default_when_empty(env('DB_DATABASE'), $database),
+            'username'    => env_default_when_empty(env('DB_USERNAME'), $username),
             'password'    => env('DB_PASSWORD', $password),
             'charset'     => 'utf8',
             'prefix'      => '',
-            'search_path' => envNonEmpty('PGSQL_SCHEMA', 'public'),
-            'schema'      => envNonEmpty('PGSQL_SCHEMA', 'public'),
-            'sslmode'     => envNonEmpty('PGSQL_SSL_MODE', 'prefer'),
-            'sslcert'     => envNonEmpty('PGSQL_SSL_CERT'),
-            'sslkey'      => envNonEmpty('PGSQL_SSL_KEY'),
-            'sslrootcert' => envNonEmpty('PGSQL_SSL_ROOT_CERT'),
+            'search_path' => env_default_when_empty(env('PGSQL_SCHEMA'), 'public'),
+            'schema'      => env_default_when_empty(env('PGSQL_SCHEMA'), 'public'),
+            'sslmode'     => env_default_when_empty(env('PGSQL_SSL_MODE'), 'prefer'),
+            'sslcert'     => env('PGSQL_SSL_CERT'),
+            'sslkey'      => env('PGSQL_SSL_KEY'),
+            'sslrootcert' => env('PGSQL_SSL_ROOT_CERT'),
         ],
         'sqlsrv' => [
             'driver'   => 'sqlsrv',
@@ -139,21 +140,21 @@ return [
             // 'prefix'  => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_') . '_database_'),
         ],
         'default' => [
-            'scheme'   => envNonEmpty('REDIS_SCHEME', 'tcp'),
-            'url'      => envNonEmpty('REDIS_URL'),
-            'path'     => envNonEmpty('REDIS_PATH'),
-            'host'     => envNonEmpty('REDIS_HOST', '127.0.0.1'),
-            'port'     => envNonEmpty('REDIS_PORT', 6379),
+            'scheme'   => env_default_when_empty(env('REDIS_SCHEME'), 'tcp'),
+            'url'      => env('REDIS_URL'),
+            'path'     => env('REDIS_PATH'),
+            'host'     => env_default_when_empty(env('REDIS_HOST'), '127.0.0.1'),
+            'port'     => env_default_when_empty(env('REDIS_PORT'), 6379),
             'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD'),
             'database' => env('REDIS_DB', '0'),
         ],
         'cache'   => [
-            'scheme'   => envNonEmpty('REDIS_SCHEME', 'tcp'),
-            'url'      => envNonEmpty('REDIS_URL'),
-            'path'     => envNonEmpty('REDIS_PATH'),
-            'host'     => envNonEmpty('REDIS_HOST', '127.0.0.1'),
-            'port'     => envNonEmpty('REDIS_PORT', 6379),
+            'scheme'   => env_default_when_empty(env('REDIS_SCHEME'), 'tcp'),
+            'url'      => env('REDIS_URL'),
+            'path'     => env('REDIS_PATH'),
+            'host'     => env_default_when_empty(env('REDIS_HOST'), '127.0.0.1'),
+            'port'     => env_default_when_empty(env('REDIS_PORT'), 6379),
             'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD'),
             'database' => env('REDIS_CACHE_DB', '1'),

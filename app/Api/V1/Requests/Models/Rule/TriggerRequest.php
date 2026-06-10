@@ -37,18 +37,20 @@ class TriggerRequest extends FormRequest
     use ChecksLogin;
     use ConvertsDataTypes;
 
+    protected array $acceptedRoles = [];
+
     public function getTriggerParameters(): array
     {
-        return ['start'    => $this->getDate('start'), 'end'      => $this->getDate('end'), 'accounts' => $this->getAccounts()];
+        return ['start' => $this->getDate('start'), 'end' => $this->getDate('end'), 'accounts' => $this->getAccounts()];
     }
 
     public function rules(): array
     {
         return [
-            'start'      => 'date|after:1970-01-02|before:2038-01-17',
-            'end'        => 'date|after_or_equal:start|after:1970-01-02|before:2038-01-17',
+            'start'      => ['date', 'after:1970-01-02', 'before:2038-01-17'],
+            'end'        => ['date', 'after_or_equal:start', 'after:1970-01-02', 'before:2038-01-17'],
             'accounts'   => '',
-            'accounts.*' => 'exists:accounts,id|belongsToUser:accounts',
+            'accounts.*' => ['exists:accounts,id', 'belongsToUser:accounts'],
         ];
     }
 

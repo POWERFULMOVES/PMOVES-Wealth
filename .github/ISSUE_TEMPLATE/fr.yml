@@ -12,6 +12,14 @@ body:
           required: true
         - label: I've used [the search](https://github.com/firefly-iii/firefly-iii/issues?q=is%3Aissue) and this has not been requested before.
           required: true
+  - type: checkboxes
+    attributes:
+      label: Use of AI
+      description: AI agents like Claude and CoPilot are not reliable tools. Do not use them.
+      options:
+        - label: I'm a real person and wrote this bug without assistance from AI.
+          required: true
+
 
   - type: textarea
     attributes:

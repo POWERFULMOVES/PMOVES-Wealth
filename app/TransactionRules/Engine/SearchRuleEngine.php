@@ -25,6 +25,9 @@ declare(strict_types=1);
 namespace FireflyIII\TransactionRules\Engine;
 
 use Carbon\Carbon;
+use FireflyIII\Events\Model\TransactionGroup\TransactionGroupEventFlags;
+use FireflyIII\Events\Model\TransactionGroup\TransactionGroupEventObjects;
+use FireflyIII\Events\Model\TransactionGroup\UpdatedSingleTransactionGroup;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Note;
 use FireflyIII\Models\Rule;
@@ -38,6 +41,7 @@ use FireflyIII\TransactionRules\Factory\ActionFactory;
 use FireflyIII\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Override;
 
 /**
  * Class SearchRuleEngine
@@ -45,6 +49,7 @@ use Illuminate\Support\Facades\Log;
 class SearchRuleEngine implements RuleEngineInterface
 {
     private readonly Collection $groups;
+
     private array $operators       = [];
     // always collect the triggers from the database, unless indicated otherwise.
     private bool  $refreshTriggers = true;
@@ -97,7 +102,7 @@ class SearchRuleEngine implements RuleEngineInterface
             Log::debug(sprintf('SearchRuleEngine:: found %d rule(s) to fire.', $this->rules->count()));
 
             /** @var Rule $rule */
-            foreach ($this->rules as $rule) { // @phpstan-ignore-line
+            foreach ($this->rules as $rule) {
                 $result = $this->fireRule($rule);
                 if ($result && true === $rule->stop_processing) {
                     Log::debug(sprintf(
@@ -118,7 +123,7 @@ class SearchRuleEngine implements RuleEngineInterface
 
             // fire each group:
             /** @var RuleGroup $group */
-            foreach ($this->groups as $group) { // @phpstan-ignore-line
+            foreach ($this->groups as $group) {
                 $this->fireGroup($group);
             }
         }
@@ -131,6 +136,21 @@ class SearchRuleEngine implements RuleEngineInterface
     public function getResults(): int
     {
         return count($this->resultCount);
+    }
+
+    #[Override]
+    public function removeOperator(string $type): void
+    {
+        $new             = [];
+        foreach ($this->operators as $operator) {
+            if ($type === $operator['type']) {
+                Log::debug(sprintf('Removing operator "%s"', $type));
+
+                continue;
+            }
+            $new[] = $operator;
+        }
+        $this->operators = $new;
     }
 
     public function setRefreshTriggers(bool $refreshTriggers): void
@@ -169,7 +189,8 @@ class SearchRuleEngine implements RuleEngineInterface
     private function addNotes(array $transaction): array
     {
         $transaction['notes'] = '';
-        $dbNote               = Note::where('noteable_id', (int) $transaction['transaction_journal_id'])
+        $dbNote               = Note::query()
+            ->where('noteable_id', (int) $transaction['transaction_journal_id'])
             ->where('noteable_type', TransactionJournal::class)
             ->first(['notes.*'])
         ;
@@ -238,7 +259,7 @@ class SearchRuleEngine implements RuleEngineInterface
             $searchEngine = app(SearchInterface::class);
             $searchEngine->setUser($this->user);
             $searchEngine->setPage(1);
-            $searchEngine->setLimit(31337);
+            $searchEngine->setLimit(31_337);
 
             foreach ($searchArray as $type => $value) {
                 $searchEngine->parseQuery(sprintf('%s:%s', $type, $value));
@@ -328,9 +349,10 @@ class SearchRuleEngine implements RuleEngineInterface
         $searchEngine = app(SearchInterface::class);
         $searchEngine->setUser($this->user);
         $searchEngine->setPage(1);
-        $searchEngine->setLimit(31337);
+        $searchEngine->setLimit(31_337);
         $searchEngine->setDate($date);
         Log::debug('Search array', $searchArray);
+
         foreach ($searchArray as $type => $searches) {
             foreach ($searches as $value) {
                 $query = sprintf('%s:%s', $type, $value);
@@ -356,15 +378,7 @@ class SearchRuleEngine implements RuleEngineInterface
         }
         if (!$group->relationLoaded('rules')) {
             Log::debug('Group rules have NOT been pre-loaded, load them NOW.');
-            $rules = $group
-                ->rules()
-                ->orderBy('rules.order', 'ASC')
-                //                         ->leftJoin('rule_triggers', 'rules.id', '=', 'rule_triggers.rule_id')
-                //                         ->where('rule_triggers.trigger_type', 'user_action')
-                //                         ->where('rule_triggers.trigger_value', 'store-journal')
-                ->where('rules.active', true)
-                ->get(['rules.*'])
-            ;
+            $rules = $group->rules()->orderBy('rules.order', 'ASC')->where('rules.active', true)->get(['rules.*']);
         }
         Log::debug(sprintf('Going to fire group #%d with %d rule(s)', $group->id, $rules->count()));
 
@@ -389,9 +403,17 @@ class SearchRuleEngine implements RuleEngineInterface
     private function fireNonStrictRule(Rule $rule): bool
     {
         Log::debug(sprintf('SearchRuleEngine::fireNonStrictRule(%d)!', $rule->id));
-        $collection = $this->findNonStrictRule($rule);
+        $flags               = new TransactionGroupEventFlags();
+        $flags->applyRules   = false;
+        $flags->fireWebhooks = false;
+        $objects             = new TransactionGroupEventObjects();
+        $collection          = $this->findNonStrictRule($rule);
+        $objects->collectFromCollection($collection);
 
         $this->processResults($rule, $collection);
+        // collect from collection, again!
+        $objects->collectFromCollection($collection);
+        event(new UpdatedSingleTransactionGroup($flags, $objects));
         Log::debug(sprintf('SearchRuleEngine:: Done processing non-strict rule #%d', $rule->id));
 
         return $collection->count() > 0;
@@ -428,11 +450,23 @@ class SearchRuleEngine implements RuleEngineInterface
     private function fireStrictRule(Rule $rule): bool
     {
         Log::debug(sprintf('SearchRuleEngine::fireStrictRule(%d)!', $rule->id));
-        $collection = $this->findStrictRule($rule);
 
+        $flags               = new TransactionGroupEventFlags();
+        $flags->applyRules   = false;
+        $flags->fireWebhooks = false;
+        $objects             = new TransactionGroupEventObjects();
+        $collection          = $this->findStrictRule($rule);
+
+        $objects->collectFromCollection($collection);
         $this->processResults($rule, $collection);
 
-        $result     = $collection->count() > 0;
+        // collect from collection, again!
+        $objects->collectFromCollection($collection);
+
+        // fire event for changed groups.
+        event(new UpdatedSingleTransactionGroup($flags, $objects));
+
+        $result              = $collection->count() > 0;
         if ($result) {
             Log::debug(sprintf('SearchRuleEngine:: Done. Rule #%d was triggered (on %d transaction(s)).', $rule->id, $collection->count()));
 
@@ -455,6 +489,10 @@ class SearchRuleEngine implements RuleEngineInterface
         $dateTrigger    = false;
         foreach ($array as $triggerName => $values) {
             if ('journal_id' === $triggerName && is_array($values) && 1 === count($values)) {
+                Log::debug('Found a journal_id trigger with 1 journal, true.');
+                $journalTrigger = true;
+            }
+            if ('journal_id' === $triggerName && is_string($values) && !str_contains($values, ',')) {
                 Log::debug('Found a journal_id trigger with 1 journal, true.');
                 $journalTrigger = true;
             }
@@ -506,12 +544,13 @@ class SearchRuleEngine implements RuleEngineInterface
         }
 
         // pick up from the action if it actually acted or not:
-        if (true === $ruleAction->stop_processing && $result) {
+        if (true === $ruleAction->stop_processing && true === $result) {
             Log::debug(sprintf('Rule action "%s" reports changes AND asks to break, so break!', $ruleAction->action_type));
 
             return true;
         }
-        if (true === $ruleAction->stop_processing && false === $result) {
+        //  reset is false at this point.
+        if (true === $ruleAction->stop_processing) {
             Log::debug(sprintf('Rule action "%s" reports NO changes AND asks to break, but we wont break!', $ruleAction->action_type));
         }
 

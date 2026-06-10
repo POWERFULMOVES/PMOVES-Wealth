@@ -215,7 +215,7 @@ class BudgetRepository implements BudgetRepositoryInterface, UserGroupInterface
     public function cleanupBudgets(): bool
     {
         // delete limits with amount 0:
-        BudgetLimit::where('amount', 0)->delete();
+        BudgetLimit::query()->where('amount', 0)->delete();
         $budgets = $this->getActiveBudgets();
 
         /**
@@ -227,11 +227,7 @@ class BudgetRepository implements BudgetRepositoryInterface, UserGroupInterface
             $budget->saveQuietly();
         }
         // other budgets, set to 0.
-        $this->user
-            ->budgets()
-            ->where('active', 0)
-            ->update(['order' => 0])
-        ;
+        $this->user->budgets()->where('active', 0)->update(['order' => 0]);
 
         return true;
     }
@@ -256,8 +252,16 @@ class BudgetRepository implements BudgetRepositoryInterface, UserGroupInterface
         foreach ($budgets as $budget) {
             DB::table('budget_transaction')->where('budget_id', $budget->id)->delete();
             DB::table('budget_transaction_journal')->where('budget_id', $budget->id)->delete();
-            RecurrenceTransactionMeta::where('name', 'budget_id')->where('value', (string) $budget->id)->delete();
-            RuleAction::where('action_type', 'set_budget')->where('action_value', (string) $budget->id)->delete();
+            RecurrenceTransactionMeta::query()
+                ->where('name', 'budget_id')
+                ->where('value', (string) $budget->id)
+                ->delete()
+            ;
+            RuleAction::query()
+                ->where('action_type', 'set_budget')
+                ->where('action_value', (string) $budget->id)
+                ->delete()
+            ;
             $budget->delete();
         }
         Log::channel('audit')->info('Delete all budgets through destroyAll');
@@ -310,11 +314,7 @@ class BudgetRepository implements BudgetRepositoryInterface, UserGroupInterface
         $query = sprintf('%%%s%%', $name);
 
         /** @var null|Budget */
-        return $this->user
-            ->budgets()
-            ->whereLike('name', $query)
-            ->first()
-        ;
+        return $this->user->budgets()->whereLike('name', $query)->first();
     }
 
     /**
@@ -345,7 +345,7 @@ class BudgetRepository implements BudgetRepositoryInterface, UserGroupInterface
 
         $disk = Storage::disk('upload');
 
-        return $set->each(static function (Attachment $attachment) use ($disk): Attachment { // @phpstan-ignore-line
+        return $set->each(static function (Attachment $attachment) use ($disk): Attachment {
             $notes                   = $attachment->notes()->first();
             $attachment->file_exists = $disk->exists($attachment->fileName());
             $attachment->notes_text  = null !== $notes ? $notes->text : '';
@@ -362,12 +362,11 @@ class BudgetRepository implements BudgetRepositoryInterface, UserGroupInterface
 
     public function getBudgets(): Collection
     {
-        return $this->user
-            ->budgets()
-            ->orderBy('order', 'ASC')
-            ->orderBy('name', 'ASC')
-            ->get()
-        ;
+        if (null === $this->user) {
+            return $this->userGroup->budgets()->orderBy('order', 'ASC')->orderBy('name', 'ASC')->get();
+        }
+
+        return $this->user->budgets()->orderBy('order', 'ASC')->orderBy('name', 'ASC')->get();
     }
 
     /**
@@ -375,11 +374,7 @@ class BudgetRepository implements BudgetRepositoryInterface, UserGroupInterface
      */
     public function getByIds(array $budgetIds): Collection
     {
-        return $this->user
-            ->budgets()
-            ->whereIn('id', $budgetIds)
-            ->get()
-        ;
+        return $this->user->budgets()->whereIn('id', $budgetIds)->get();
     }
 
     public function getInactiveBudgets(): Collection

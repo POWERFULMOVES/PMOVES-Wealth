@@ -34,16 +34,16 @@ return [
     | and used as needed; however, this mailer will be used by default.
     |
     */
-    'default'  => envNonEmpty('MAIL_MAILER', 'log'),
+    'default'  => env_default_when_empty(env('MAIL_MAILER'), 'log'),
 
     'mailers'  => [
         'smtp'       => [
             'transport'         => 'smtp',
-            'host'              => envNonEmpty('MAIL_HOST', 'smtp.mailtrap.io'),
+            'host'              => env_default_when_empty(env('MAIL_HOST'), 'smtp.mailtrap.io'),
             'port'              => (int) env('MAIL_PORT', 2525),
-            'encryption'        => envNonEmpty('MAIL_ENCRYPTION', 'tls'),
-            'username'          => envNonEmpty('MAIL_USERNAME', 'user@example.com'),
-            'password'          => envNonEmpty('MAIL_PASSWORD', 'password'),
+            'encryption'        => env_default_when_empty(env('MAIL_ENCRYPTION'), 'tls'),
+            'username'          => env_default_when_empty(env('MAIL_USERNAME'), 'user@example.com'),
+            'password'          => env_default_when_empty(env('MAIL_PASSWORD'), 'password'),
             'timeout'           => null,
             'scheme'            => env('MAIL_SCHEME'),
             'url'               => env('MAIL_URL'),
@@ -73,7 +73,7 @@ return [
 
         'sendmail'   => [
             'transport' => 'sendmail',
-            'path'      => envNonEmpty('MAIL_SENDMAIL_COMMAND', '/usr/sbin/sendmail -bs'),
+            'path'      => env_default_when_empty(env('MAIL_SENDMAIL_COMMAND'), '/usr/sbin/sendmail -bs'),
         ],
         'log'        => [
             'transport' => 'log',
@@ -91,7 +91,7 @@ return [
         ],
     ],
 
-    'from'     => ['address' => envNonEmpty('MAIL_FROM', 'changeme@example.com'), 'name' => 'Firefly III Mailer'],
+    'from'     => ['address' => env_default_when_empty(env('MAIL_FROM'), 'changeme@example.com'), 'name' => 'Firefly III Mailer'],
     'markdown' => [
         'theme' => 'default',
 

@@ -42,7 +42,7 @@ use Psr\Container\NotFoundExceptionInterface;
 /**
  * Class JavascriptController.
  */
-class JavascriptController extends Controller
+final class JavascriptController extends Controller
 {
     use GetConfigurationData;
 
@@ -59,14 +59,14 @@ class JavascriptController extends Controller
             AccountTypeEnum::MORTGAGE->value,
             AccountTypeEnum::CREDITCARD->value,
         ]);
-        $data     = ['accounts'     => []];
+        $data     = ['accounts' => []];
 
         /** @var Account $account */
         foreach ($accounts as $account) {
             $accountId                    = $account->id;
             $currency                     = (int) $repository->getMetaValue($account, 'currency_id');
             $currency                     = 0 === $currency ? $this->primaryCurrency->id : $currency;
-            $entry                        = ['preferredCurrency' => $currency, 'name'              => $account->name];
+            $entry                        = ['preferredCurrency' => $currency, 'name' => $account->name];
             $data['accounts'][$accountId] = $entry;
         }
 
@@ -79,12 +79,12 @@ class JavascriptController extends Controller
     public function currencies(CurrencyRepositoryInterface $repository): Response
     {
         $currencies = $repository->get();
-        $data       = ['currencies'       => []];
+        $data       = ['currencies' => []];
 
         /** @var TransactionCurrency $currency */
         foreach ($currencies as $currency) {
             $currencyId                      = $currency->id;
-            $entry                           = ['name'   => $currency->name, 'code'   => $currency->code, 'symbol' => $currency->symbol];
+            $entry                           = ['name' => $currency->name, 'code' => $currency->code, 'symbol' => $currency->symbol];
             $data['currencies'][$currencyId] = $entry;
         }
 
@@ -116,7 +116,7 @@ class JavascriptController extends Controller
             'currencyCode'         => $currency->code,
             'currencySymbol'       => $currency->symbol,
             'accountingLocaleInfo' => $accounting,
-            'anonymous'            => var_export(Steam::anonymous(), true),
+            'anonymous'            => var_export(Steam::anonymous(), return: true),
             'language'             => $lang,
             'dateRangeTitle'       => $dateRange['title'],
             'locale'               => $locale,
@@ -139,7 +139,7 @@ class JavascriptController extends Controller
         /** @var Carbon $end */
         $end   = clone session('end', today(config('app.timezone'))->endOfMonth());
 
-        $data  = ['start' => $start->format('Y-m-d'), 'end'   => $end->format('Y-m-d')];
+        $data  = ['start' => $start->format('Y-m-d'), 'end' => $end->format('Y-m-d')];
 
         return response()->view('v2.javascript.variables', $data)->header('Content-Type', 'text/javascript');
     }

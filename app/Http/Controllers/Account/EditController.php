@@ -43,7 +43,7 @@ use Illuminate\View\View;
 /**
  * Class EditController
  */
-class EditController extends Controller
+final class EditController extends Controller
 {
     use ModelInformation;
 
@@ -74,7 +74,7 @@ class EditController extends Controller
      *
      * @SuppressWarnings("PHPMD.NPathComplexity")
      *
-     * @return Factory|Redirector|RedirectResponse|View
+     * @return Factory|RedirectResponse|View
      */
     public function edit(
         Request $request,
@@ -86,7 +86,7 @@ class EditController extends Controller
         }
 
         $objectType           = config('firefly.shortNamesByFullName')[$account->accountType->type];
-        $subTitle             = (string) trans(sprintf('firefly.edit_%s_account', $objectType), ['name'        => $account->name]);
+        $subTitle             = (string) trans(sprintf('firefly.edit_%s_account', $objectType), ['name' => $account->name]);
         $subTitleIcon         = config(sprintf('firefly.subIconsByIdentifier.%s', $objectType));
         $roles                = $this->getRoles();
         $liabilityTypes       = $this->getLiabilityTypes();
@@ -96,14 +96,16 @@ class EditController extends Controller
         $zoomLevel            = $location instanceof Location ? $location->zoom_level : config('firefly.default_location.zoom_level');
         $canEditCurrency      = 0 === $account->piggyBanks()->count();
         $hasLocation          = $location instanceof Location;
-        $locations            = ['location'       => [
-            'latitude'     => old('location_latitude') ?? $latitude,
-            'longitude'    => old('location_longitude') ?? $longitude,
-            'zoom_level'   => old('location_zoom_level') ?? $zoomLevel,
-            'has_location' => $hasLocation || 'true' === old('location_has_location'),
-        ]];
+        $locations            = [
+            'location' => [
+                'latitude'     => old('location_latitude') ?? $latitude,
+                'longitude'    => old('location_longitude') ?? $longitude,
+                'zoom_level'   => old('location_zoom_level') ?? $zoomLevel,
+                'has_location' => $hasLocation || 'true' === old('location_has_location'),
+            ],
+        ];
 
-        $liabilityDirections  = ['debit'  => trans('firefly.liability_direction_debit'), 'credit' => trans('firefly.liability_direction_credit')];
+        $liabilityDirections  = ['debit' => trans('firefly.liability_direction_debit'), 'credit' => trans('firefly.liability_direction_credit')];
 
         // interest calculation periods:
         $interestPeriods      = [];
@@ -181,7 +183,7 @@ class EditController extends Controller
     /**
      * Update the account.
      *
-     * @return $this|Redirector|RedirectResponse
+     * @return RedirectResponse
      */
     public function update(AccountFormRequest $request, Account $account)
     {

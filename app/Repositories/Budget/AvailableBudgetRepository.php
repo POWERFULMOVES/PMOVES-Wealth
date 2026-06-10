@@ -69,6 +69,17 @@ class AvailableBudgetRepository implements AvailableBudgetRepositoryInterface, U
             }
             $exists[$key] = true;
         }
+
+        // grab budget limit currencies.
+        $currencies       = BudgetLimit::leftJoin('budgets', 'budgets.id', '=', 'budget_limits.budget_id')
+            ->where('budgets.user_id', $this->user->id)
+            ->distinct()
+            ->get(['budget_limits.transaction_currency_id'])
+            ->pluck('transaction_currency_id')
+            ->toArray()
+        ;
+        // delete available budgets without these currencies.
+        $this->user->availableBudgets()->whereNotIn('transaction_currency_id', $currencies)->delete();
     }
 
     /**
@@ -102,7 +113,24 @@ class AvailableBudgetRepository implements AvailableBudgetRepositoryInterface, U
 
     public function findById(int $id): ?AvailableBudget
     {
+        /** @var null|AvailableBudget */
         return $this->user->availableBudgets->find($id);
+    }
+
+    #[Override]
+    public function findInRange(TransactionCurrency $currency, Carbon $start, Carbon $end): Collection
+    {
+        /** @var Collection */
+        return $this->user
+            ->availableBudgets()
+            ->where('transaction_currency_id', $currency->id)
+            // start date OR end date must be the same or equal to start or END respectively.
+            ->where(function ($q1) use ($start, $end): void {
+                $q1->whereBetween('start_date', [$start, $end]);
+                $q1->orWhereBetween('end_date', [$start, $end]);
+            })
+            ->get(['available_budgets.*'])
+        ;
     }
 
     /**
@@ -148,11 +176,7 @@ class AvailableBudgetRepository implements AvailableBudgetRepositoryInterface, U
      */
     public function getAvailableBudgetsByCurrency(TransactionCurrency $currency): Collection
     {
-        return $this->user
-            ->availableBudgets()
-            ->where('transaction_currency_id', $currency->id)
-            ->get()
-        ;
+        return $this->user->availableBudgets()->where('transaction_currency_id', $currency->id)->get();
     }
 
     /**
@@ -177,24 +201,14 @@ class AvailableBudgetRepository implements AvailableBudgetRepositoryInterface, U
      */
     public function getAvailableBudgetsByExactDate(Carbon $start, Carbon $end): Collection
     {
-        return $this->user
-            ->availableBudgets()
-            ->where('start_date', '=', $start->format('Y-m-d'))
-            ->where('end_date', '=', $end->format('Y-m-d'))
-            ->get()
-        ;
+        return $this->user->availableBudgets()->where('start_date', '=', $start->format('Y-m-d'))->where('end_date', '=', $end->format('Y-m-d'))->get();
     }
 
     public function getAvailableBudgetWithCurrency(Carbon $start, Carbon $end): array
     {
         Log::debug(sprintf('Now in %s(%s, %s)', __METHOD__, $start->format('Y-m-d H:i:s'), $end->format('Y-m-d H:i:s')));
         $return           = [];
-        $availableBudgets = $this->user
-            ->availableBudgets()
-            ->where('start_date', $start->format('Y-m-d'))
-            ->where('end_date', $end->format('Y-m-d'))
-            ->get()
-        ;
+        $availableBudgets = $this->user->availableBudgets()->where('start_date', $start->format('Y-m-d'))->where('end_date', $end->format('Y-m-d'))->get();
 
         Log::debug(sprintf('Found %d available budgets (already converted)', $availableBudgets->count()));
 
@@ -373,17 +387,13 @@ class AvailableBudgetRepository implements AvailableBudgetRepositoryInterface, U
             return (string) $budgetLimit->amount;
         }
         // if budget limit period is inside AB period, it can be added in full.
-        if (!$limitPeriod->equals($availableBudgetPeriod) && $availableBudgetPeriod->contains($limitPeriod)) {
+        if ($availableBudgetPeriod->contains($limitPeriod)) {
             Log::debug('This budget limit is smaller than the available budget period.');
 
             return (string) $budgetLimit->amount;
         }
 
-        if (
-            !$limitPeriod->equals($availableBudgetPeriod)
-            && !$availableBudgetPeriod->contains($limitPeriod)
-            && $availableBudgetPeriod->overlapsWith($limitPeriod)
-        ) {
+        if ($availableBudgetPeriod->overlapsWith($limitPeriod)) {
             Log::debug('This budget limit is something else entirely!');
             $overlap = $availableBudgetPeriod->overlap($limitPeriod);
             if ($overlap instanceof Period) {

@@ -43,7 +43,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 /**
  * Class ShowController
  */
-class ShowController extends Controller
+final class ShowController extends Controller
 {
     private ALERepositoryInterface $aleRepository;
     private TransactionGroupRepositoryInterface $repository;
@@ -165,7 +165,7 @@ class ShowController extends Controller
 
     private function getAccounts(array $group): array
     {
-        $accounts                = ['source'      => [], 'destination' => []];
+        $accounts                = ['source' => [], 'destination' => []];
 
         foreach ($group['transactions'] as $transaction) {
             $accounts['source'][]      = [

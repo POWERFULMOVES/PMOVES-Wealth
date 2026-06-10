@@ -36,7 +36,7 @@ use Illuminate\Http\JsonResponse;
 /**
  * Class DestroyController
  */
-class DestroyController extends Controller
+final class DestroyController extends Controller
 {
     use TransactionFilter;
 
@@ -71,6 +71,7 @@ class DestroyController extends Controller
         if (false === $linkType->editable) {
             throw new FireflyException('200020: Link type cannot be changed.');
         }
+
         $this->repository->destroy($linkType);
         Preferences::mark();
 

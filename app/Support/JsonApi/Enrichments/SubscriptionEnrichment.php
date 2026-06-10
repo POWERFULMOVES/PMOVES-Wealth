@@ -46,16 +46,7 @@ use Illuminate\Support\Facades\Log;
 class SubscriptionEnrichment implements EnrichmentInterface
 {
     private BillDateCalculator $calculator;
-    private Collection $collection; // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
+    private Collection $collection;
     private readonly bool $convertToPrimary;
     private ?Carbon $end             = null;
     private array   $mappedObjects   = [];
@@ -232,7 +223,7 @@ class SubscriptionEnrichment implements EnrichmentInterface
             $this->mappedObjects[(int) $entry->object_groupable_id] = (int) $entry->object_group_id;
         }
 
-        $groups = ObjectGroup::whereIn('id', $ids)->get(['id', 'title', 'order'])->toArray();
+        $groups = ObjectGroup::query()->whereIn('id', $ids)->get(['id', 'title', 'order'])->toArray();
         foreach ($groups as $group) {
             $group['id']                            = (int) $group['id'];
             $group['order']                         = (int) $group['order'];
@@ -479,10 +470,9 @@ class SubscriptionEnrichment implements EnrichmentInterface
             } catch (InvalidFormatException) {
                 $temp2 = today(config('app.timezone'));
             }
-            $nemDiff = trans('firefly.bill_expected_date', ['date' => $temp2->diffForHumans(
-                today(config('app.timezone')),
-                CarbonInterface::DIFF_RELATIVE_TO_NOW
-            )]);
+            $nemDiff = trans('firefly.bill_expected_date', [
+                'date' => $temp2->diffForHumans(today(config('app.timezone')), CarbonInterface::DIFF_RELATIVE_TO_NOW),
+            ]);
         }
         unset($temp2);
 

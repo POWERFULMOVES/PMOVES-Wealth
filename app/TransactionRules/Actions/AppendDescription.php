@@ -49,15 +49,11 @@ class AppendDescription implements ActionInterface
         $this->refreshNotes($journal);
         $append      = $this->action->getValue($journal);
         $description = sprintf('%s %s', $journal['description'], $append);
-        DB::table('transaction_journals')
-            ->where('id', $journal['transaction_journal_id'])
-            ->limit(1)
-            ->update(['description' => $description])
-        ;
+        DB::table('transaction_journals')->where('id', $journal['transaction_journal_id'])->limit(1)->update(['description' => $description]);
 
         // event for audit log entry
         /** @var TransactionJournal $object */
-        $object      = TransactionJournal::where('user_id', $journal['user_id'])->find($journal['transaction_journal_id']);
+        $object      = TransactionJournal::query()->where('user_id', $journal['user_id'])->find($journal['transaction_journal_id']);
         event(new TransactionGroupRequestsAuditLogEntry($this->action->rule, $object, 'update_description', $journal['description'], $description));
 
         return true;

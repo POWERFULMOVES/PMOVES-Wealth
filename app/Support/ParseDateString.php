@@ -318,7 +318,7 @@ class ParseDateString
         Log::debug(sprintf('parseMonthYearRange: Parsed "%s".', $date));
         $parts = explode('-', $date);
 
-        return ['year'  => $parts[0], 'month' => $parts[1]];
+        return ['year' => $parts[0], 'month' => $parts[1]];
     }
 
     protected function parseRelativeDate(string $date): Carbon
@@ -353,7 +353,7 @@ class ParseDateString
             }
             $func      = $functions[$direction][$period];
             Log::debug(sprintf('Will now do %s(%d) on %s', $func, $number, $today->format('Y-m-d')));
-            $today->{$func}($number); // @phpstan-ignore-line
+            $today->{$func}($number);
             Log::debug(sprintf('Resulting date is %s', $today->format('Y-m-d')));
         }
 
@@ -379,7 +379,7 @@ class ParseDateString
         Log::debug(sprintf('parseDayYearRange: Parsed "%s".', $date));
         $parts = explode('-', $date);
 
-        return ['year' => $parts[0], 'day'  => $parts[2]];
+        return ['year' => $parts[0], 'day' => $parts[2]];
     }
 
     /**
@@ -390,6 +390,6 @@ class ParseDateString
         Log::debug(sprintf('parseMonthDayRange: Parsed "%s".', $date));
         $parts = explode('-', $date);
 
-        return ['month' => $parts[1], 'day'   => $parts[2]];
+        return ['month' => $parts[1], 'day' => $parts[2]];
     }
 }

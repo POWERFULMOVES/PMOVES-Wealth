@@ -38,18 +38,16 @@ use FireflyIII\Support\Http\Controllers\CreateStuff;
 use FireflyIII\User;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\Guard;
-use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\Validation\Factory as ValidationFactory;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
-use Laravel\Passport\ClientRepository;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use SensitiveParameter;
@@ -59,7 +57,7 @@ use SensitiveParameter;
  *
  * @method Guard guard()
  */
-class ProfileController extends Controller
+final class ProfileController extends Controller
 {
     use CreateStuff;
 
@@ -68,8 +66,9 @@ class ProfileController extends Controller
     /**
      * ProfileController constructor.
      */
-    public function __construct()
-    {
+    public function __construct(
+        protected ValidationFactory $validation
+    ) {
         parent::__construct();
 
         $this->middleware(static function ($request, $next) {
@@ -101,13 +100,13 @@ class ProfileController extends Controller
         $subTitle     = (string) trans('firefly.change_your_email');
         $subTitleIcon = 'fa-envelope';
 
-        return view('profile.change-email', ['title'        => $title, 'subTitle'     => $subTitle, 'subTitleIcon' => $subTitleIcon, 'email'        => $email]);
+        return view('profile.change-email', ['title' => $title, 'subTitle' => $subTitle, 'subTitleIcon' => $subTitleIcon, 'email' => $email]);
     }
 
     /**
      * Change your password.
      *
-     * @return Factory|Redirector|RedirectResponse|View
+     * @return Factory|RedirectResponse|View
      */
     public function changePassword(Request $request): Factory|\Illuminate\Contracts\View\View|Redirector|RedirectResponse
     {
@@ -121,7 +120,7 @@ class ProfileController extends Controller
         $subTitle     = (string) trans('firefly.change_your_password');
         $subTitleIcon = 'fa-key';
 
-        return view('profile.change-password', ['title'        => $title, 'subTitle'     => $subTitle, 'subTitleIcon' => $subTitleIcon]);
+        return view('profile.change-password', ['title' => $title, 'subTitle' => $subTitle, 'subTitleIcon' => $subTitleIcon]);
     }
 
     /**
@@ -129,7 +128,7 @@ class ProfileController extends Controller
      *
      * @throws FireflyException
      */
-    public function confirmEmailChange(UserRepositoryInterface $repository, #[SensitiveParameter] string $token): Redirector|RedirectResponse
+    public function confirmEmailChange(UserRepositoryInterface $repository, #[SensitiveParameter] string $token): RedirectResponse
     {
         if (!$this->internalAuth) {
             throw new FireflyException(trans('firefly.external_user_mgt_disabled'));
@@ -142,7 +141,7 @@ class ProfileController extends Controller
 
         /** @var Preference $preference */
         foreach ($set as $preference) {
-            if ($preference->data === $token) {
+            if (hash_equals($preference->data, $token)) {
                 $user = $preference->user;
             }
         }
@@ -174,7 +173,7 @@ class ProfileController extends Controller
         $subTitle     = (string) trans('firefly.delete_account');
         $subTitleIcon = 'fa-trash';
 
-        return view('profile.delete-account', ['title'        => $title, 'subTitle'     => $subTitle, 'subTitleIcon' => $subTitleIcon]);
+        return view('profile.delete-account', ['title' => $title, 'subTitle' => $subTitle, 'subTitleIcon' => $subTitleIcon]);
     }
 
     /**
@@ -188,11 +187,8 @@ class ProfileController extends Controller
         /** @var User $user */
         $user           = auth()->user();
         $isInternalAuth = $this->internalAuth;
-        $count          = DB::table('oauth_clients')
-            ->where('personal_access_client', true)
-            ->whereNull('user_id')
-            ->count()
-        ;
+        // $count          = DB::table('oauth_clients')->where('personal_access_client', true)->whereNull('user_id')->count();
+        $count          = 0;
         $subTitle       = $user->email;
         $userId         = $user->id;
         $enabled2FA     = null !== $user->mfa_secret;
@@ -203,12 +199,12 @@ class ProfileController extends Controller
         $mfaBackupCount = count($recoveryData);
         $this->createOAuthKeys();
 
-        if (0 === $count) {
-            /** @var ClientRepository $repository */
-            $repository = app(ClientRepository::class);
-            $name       = sprintf('%s Personal Access Grant Client', config('app.name'));
-            $repository->createPersonalAccessClient(null, $name, 'http://localhost');
-        }
+        //        if (0 === $count) {
+        //            /** @var ClientRepository $repository */
+        //            $repository = app(ClientRepository::class);
+        //            $name       = sprintf('%s Personal Access Grant Client', config('app.name'));
+        //            $repository->createPersonalAccessClient(null, $name, 'http://localhost');
+        //        }
 
         $accessToken    = Preferences::get('access_token');
         if (null === $accessToken) {
@@ -284,7 +280,7 @@ class ProfileController extends Controller
     /**
      * Submit change password form.
      */
-    public function postChangePassword(ProfileFormRequest $request, UserRepositoryInterface $repository): Redirector|RedirectResponse
+    public function postChangePassword(ProfileFormRequest $request, UserRepositoryInterface $repository): RedirectResponse
     {
         if (!$this->internalAuth) {
             $request->session()->flash('error', trans('firefly.external_user_mgt_disabled'));
@@ -316,7 +312,7 @@ class ProfileController extends Controller
     /**
      * Submit delete account.
      */
-    public function postDeleteAccount(UserRepositoryInterface $repository, DeleteAccountFormRequest $request): Redirector|RedirectResponse
+    public function postDeleteAccount(UserRepositoryInterface $repository, DeleteAccountFormRequest $request): RedirectResponse
     {
         if (!$this->internalAuth) {
             $request->session()->flash('error', trans('firefly.external_user_mgt_disabled'));
@@ -342,18 +338,16 @@ class ProfileController extends Controller
     }
 
     /**
-     * @return Application|Redirector|RedirectResponse
-     *
      * @throws AuthenticationException
      */
-    public function postLogoutOtherSessions(Request $request): Redirector|RedirectResponse
+    public function postLogoutOtherSessions(Request $request): RedirectResponse
     {
         if (!$this->internalAuth) {
             session()->flash('info', (string) trans('firefly.external_auth_disabled'));
 
             return redirect(route('profile.index'));
         }
-        $creds = ['email'    => auth()->user()->email, 'password' => $request->get('password')];
+        $creds = ['email' => auth()->user()->email, 'password' => $request->get('password')];
         if (Auth::once($creds)) {
             Auth::logoutOtherDevices($request->get('password'));
             session()->flash('info', (string) trans('firefly.other_sessions_logged_out'));
@@ -370,7 +364,7 @@ class ProfileController extends Controller
      *
      * @throws Exception
      */
-    public function regenerate(Request $request): Redirector|RedirectResponse
+    public function regenerate(Request $request): RedirectResponse
     {
         if (!$this->internalAuth) {
             $request->session()->flash('error', trans('firefly.external_user_mgt_disabled'));
@@ -392,7 +386,7 @@ class ProfileController extends Controller
      *
      * @throws FireflyException
      */
-    public function undoEmailChange(UserRepositoryInterface $repository, #[SensitiveParameter] string $token, string $hash): Redirector|RedirectResponse
+    public function undoEmailChange(UserRepositoryInterface $repository, #[SensitiveParameter] string $token, string $hash): RedirectResponse
     {
         if (!$this->internalAuth) {
             throw new FireflyException(trans('firefly.external_user_mgt_disabled'));
@@ -404,7 +398,7 @@ class ProfileController extends Controller
 
         /** @var Preference $preference */
         foreach ($set as $preference) {
-            if ($preference->data === $token) {
+            if (hash_equals($preference->data, $token)) {
                 $user = $preference->user;
             }
         }

@@ -39,7 +39,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 /**
  * Class DeleteController
  */
-class DeleteController extends Controller
+final class DeleteController extends Controller
 {
     private TransactionGroupRepositoryInterface $repository;
 
@@ -77,7 +77,7 @@ class DeleteController extends Controller
             throw new NotFoundHttpException();
         }
         $objectType = strtolower($journal->transaction_type_type ?? $journal->transactionType->type);
-        $subTitle   = (string) trans('firefly.delete_'.$objectType, ['description'   => $group->title ?? $journal->description]);
+        $subTitle   = (string) trans('firefly.delete_'.$objectType, ['description' => $group->title ?? $journal->description]);
         $previous   = Steam::getSafePreviousUrl();
         // put previous url in session
         Log::debug('Will try to remember previous URL');
@@ -95,7 +95,7 @@ class DeleteController extends Controller
     /**
      * Actually destroys the journal.
      */
-    public function destroy(TransactionGroup $group): Redirector|RedirectResponse
+    public function destroy(TransactionGroup $group): RedirectResponse
     {
         Log::debug(sprintf('Now in %s(#%d).', __METHOD__, $group->id));
         if (!$this->isEditableGroup($group)) {

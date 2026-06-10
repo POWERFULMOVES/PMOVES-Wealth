@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace FireflyIII\Models;
 
-use Deprecated;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -32,75 +31,15 @@ class AccountType extends Model
 {
     use ReturnsIntegerIdTrait;
 
-    /** @deprecated */
-    #[Deprecated]
-    public const string ASSET            = 'Asset account';
+    protected function casts(): array
+    {
+        return ['created_at' => 'datetime', 'updated_at' => 'datetime'];
+    }
 
-    /** @deprecated */
-    #[Deprecated]
-    public const string BENEFICIARY      = 'Beneficiary account';
-
-    /** @deprecated */
-    #[Deprecated]
-    public const string CASH             = 'Cash account';
-
-    /** @deprecated */
-    #[Deprecated]
-    public const string CREDITCARD       = 'Credit card';
-
-    /** @deprecated */
-    #[Deprecated]
-    public const string DEBT             = 'Debt';
-
-    /** @deprecated */
-    #[Deprecated]
-    public const string DEFAULT          = 'Default account';
-
-    /** @deprecated */
-    #[Deprecated]
-    public const string EXPENSE          = 'Expense account';
-
-    /** @deprecated */
-    #[Deprecated]
-    public const string IMPORT           = 'Import account';
-
-    /** @deprecated */
-    #[Deprecated]
-    public const string INITIAL_BALANCE  = 'Initial balance account';
-
-    /** @deprecated */
-    #[Deprecated]
-    public const string LIABILITY_CREDIT = 'Liability credit account';
-
-    /** @deprecated */
-    #[Deprecated]
-    public const string LOAN             = 'Loan';
-
-    /** @deprecated */
-    #[Deprecated]
-    public const string MORTGAGE         = 'Mortgage';
-
-    /** @deprecated */
-    #[Deprecated]
-    public const string RECONCILIATION   = 'Reconciliation account';
-
-    /** @deprecated */
-    #[Deprecated]
-    public const string REVENUE          = 'Revenue account';
-
-    protected $casts                     = ['created_at' => 'datetime', 'updated_at' => 'datetime'];
-
-    protected $fillable                  = ['type'];
+    protected $fillable = ['type'];
 
     public function accounts(): HasMany
     {
         return $this->hasMany(Account::class);
-    }
-
-    protected function casts(): array
-    {
-        return [
-            // 'type' => AccountTypeEnum::class,
-        ];
     }
 }

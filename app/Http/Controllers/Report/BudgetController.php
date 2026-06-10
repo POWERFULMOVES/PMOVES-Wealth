@@ -42,7 +42,7 @@ use Throwable;
 /**
  * Class BudgetController.
  */
-class BudgetController extends Controller
+final class BudgetController extends Controller
 {
     use BasicDataSupport;
 
@@ -82,7 +82,7 @@ class BudgetController extends Controller
         $generator->accountPerBudget();
         $report    = $generator->getReport();
 
-        return view('reports.budget.partials.account-per-budget', ['report'  => $report, 'budgets' => $budgets]);
+        return view('reports.budget.partials.account-per-budget', ['report' => $report, 'budgets' => $budgets]);
     }
 
     /**
@@ -97,7 +97,7 @@ class BudgetController extends Controller
         /** @var Account $account */
         foreach ($accounts as $account) {
             $accountId = $account->id;
-            $report[$accountId] ??= ['name'       => $account->name, 'id'         => $account->id, 'iban'       => $account->iban, 'currencies' => []];
+            $report[$accountId] ??= ['name' => $account->name, 'id' => $account->id, 'iban' => $account->iban, 'currencies' => []];
         }
 
         // loop expenses.
@@ -129,7 +129,7 @@ class BudgetController extends Controller
             }
         }
 
-        return view('reports.budget.partials.accounts', ['sums'   => $sums, 'report' => $report]);
+        return view('reports.budget.partials.accounts', ['sums' => $sums, 'report' => $report]);
     }
 
     /**
@@ -195,7 +195,7 @@ class BudgetController extends Controller
         /** @var Budget $budget */
         foreach ($budgets as $budget) {
             $budgetId = $budget->id;
-            $report[$budgetId] ??= ['name'       => $budget->name, 'id'         => $budget->id, 'currencies' => []];
+            $report[$budgetId] ??= ['name' => $budget->name, 'id' => $budget->id, 'currencies' => []];
         }
         foreach ($spent as $currency) {
             $currencyId = $currency['currency_id'];
@@ -243,7 +243,7 @@ class BudgetController extends Controller
             }
         }
 
-        return view('reports.budget.partials.budgets', ['sums'   => $sums, 'report' => $report]);
+        return view('reports.budget.partials.budgets', ['sums' => $sums, 'report' => $report]);
     }
 
     /**
@@ -284,7 +284,7 @@ class BudgetController extends Controller
         $cache->addProperty('budget-period-report');
         $cache->addProperty($accounts->pluck('id')->toArray());
         if ($cache->has()) {
-            return $cache->get();
+            // return $cache->get();
         }
 
         $periods   = Navigation::listOfPeriods($start, $end);
@@ -292,7 +292,6 @@ class BudgetController extends Controller
 
         // list expenses for budgets in account(s)
         $expenses  = $this->opsRepository->listExpenses($start, $end, $accounts);
-
         $report    = [];
         foreach ($expenses as $currency) {
             foreach ($currency['budgets'] as $budget) {
@@ -300,9 +299,12 @@ class BudgetController extends Controller
                 foreach ($budget['transaction_journals'] as $journal) {
                     // #10678
                     // skip transactions between two asset / liability accounts.
+                    // #12223
+                    // must also be of the same type to be skipped
                     if (
                         in_array($journal['source_account_type'], config('firefly.valid_currency_account_types'), true)
                         && in_array($journal['destination_account_type'], config('firefly.valid_currency_account_types'), true)
+                        && $journal['source_account_type'] === $journal['destination_account_type']
                     ) {
                         continue;
                     }
@@ -330,7 +332,7 @@ class BudgetController extends Controller
         }
 
         try {
-            $result = view('reports.partials.budget-period', ['report'  => $report, 'periods' => $periods])->render();
+            $result = view('reports.partials.budget-period', ['report' => $report, 'periods' => $periods])->render();
         } catch (Throwable $e) {
             Log::error(sprintf('Could not render reports.partials.budget-period: %s', $e->getMessage()));
             Log::error($e->getTraceAsString());

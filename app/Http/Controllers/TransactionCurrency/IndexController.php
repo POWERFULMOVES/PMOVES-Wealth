@@ -37,7 +37,7 @@ use Illuminate\View\View;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
-class IndexController extends Controller
+final class IndexController extends Controller
 {
     protected CurrencyRepositoryInterface $repository;
     protected UserRepositoryInterface $userRepository;
@@ -93,6 +93,6 @@ class IndexController extends Controller
             $isOwner = false;
         }
 
-        return view('currencies.index', ['currencies' => $currencies, 'isOwner'    => $isOwner]);
+        return view('currencies.index', ['currencies' => $currencies, 'isOwner' => $isOwner]);
     }
 }

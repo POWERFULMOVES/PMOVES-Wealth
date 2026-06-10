@@ -24,7 +24,6 @@ declare(strict_types=1);
 namespace FireflyIII\Providers;
 
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Route;
 use Override;
 
 /**
@@ -42,20 +41,18 @@ class RouteServiceProvider extends ServiceProvider
     #[Override]
     public function boot(): void
     {
-        $this->routes(function (): void {
-            Route::prefix('api')
-                ->middleware('api')
-                ->namespace($this->namespace)
-                ->group(base_path('routes/api.php'))
-            ;
-
-            Route::prefix('api/v1/cron')
-                ->middleware('api_basic')
-                ->namespace($this->namespace)
-                ->group(base_path('routes/api-noauth.php'))
-            ;
-
-            Route::middleware('web')->namespace($this->namespace)->group(base_path('routes/web.php'));
-        });
+        //        $this->routes(function (): void {
+        //            Route::prefix('api')
+        //                ->middleware('api')
+        //                ->namespace($this->namespace)
+        //                ->group(base_path('routes/api.php'))
+        //            ;
+        //            Route::prefix('api/v1/cron')
+        //                ->middleware('api_basic')
+        //                ->namespace($this->namespace)
+        //                ->group(base_path('routes/api-noauth.php'))
+        //            ;
+        //            Route::middleware('web')->namespace($this->namespace)->group(base_path('routes/web.php'));
+        //        });
     }
 }

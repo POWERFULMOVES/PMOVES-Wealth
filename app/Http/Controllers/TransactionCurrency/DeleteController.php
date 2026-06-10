@@ -40,7 +40,7 @@ use Illuminate\View\View;
 /**
  * Class DeleteController
  */
-class DeleteController extends Controller
+final class DeleteController extends Controller
 {
     protected CurrencyRepositoryInterface $repository;
     protected UserRepositoryInterface $userRepository;
@@ -65,7 +65,7 @@ class DeleteController extends Controller
     /**
      * Deletes a currency.
      *
-     * @return Factory|Redirector|RedirectResponse|View
+     * @return Factory|RedirectResponse|View
      *
      * @throws FireflyException
      */
@@ -82,7 +82,7 @@ class DeleteController extends Controller
 
         if ($this->repository->currencyInUse($currency)) {
             $location = $this->repository->currencyInUseAt($currency);
-            $message  = (string) trans(sprintf('firefly.cannot_disable_currency_%s', $location), ['name'  => e($currency->name)]);
+            $message  = (string) trans(sprintf('firefly.cannot_disable_currency_%s', $location), ['name' => e($currency->name)]);
             $request->session()->flash('error', $message);
             Log::channel('audit')->warning(sprintf('Tried to visit page to delete currency %s but currency is in use.', $currency->code));
 
@@ -102,7 +102,7 @@ class DeleteController extends Controller
      *
      * @throws FireflyException
      */
-    public function destroy(Request $request, TransactionCurrency $currency): Redirector|RedirectResponse
+    public function destroy(Request $request, TransactionCurrency $currency): RedirectResponse
     {
         /** @var User $user */
         $user = auth()->user();

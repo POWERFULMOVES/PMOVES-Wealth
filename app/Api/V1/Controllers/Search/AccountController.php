@@ -41,7 +41,7 @@ use League\Fractal\Resource\Collection as FractalCollection;
 /**
  * Class AccountController
  */
-class AccountController extends Controller
+final class AccountController extends Controller
 {
     use AccountFilter;
 
@@ -53,11 +53,6 @@ class AccountController extends Controller
         AccountSearch::SEARCH_NUMBER,
     ];
 
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
     /**
      * This endpoint is documented at:
      * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/search/searchAccounts
@@ -68,7 +63,7 @@ class AccountController extends Controller
         $query       = trim((string) $request->get('query'));
         $field       = trim((string) $request->get('field'));
         $type        = $request->get('type') ?? 'all';
-        if ('' === $query || !in_array($field, $this->validFields, true)) {
+        if ('' === $query || !in_array($field, $this->validFields, strict: true)) {
             return response(null, 422);
         }
         Log::debug(sprintf('Now in account search("%s", "%s")', $field, $query));

@@ -21,6 +21,9 @@
  */
 
 declare(strict_types=1);
+
+use FireflyIII\Http\Middleware\AcceptHeaders;
+use FireflyIII\Http\Middleware\Binder;
 use Illuminate\Support\Facades\Route;
 
 use function Safe\define;
@@ -37,6 +40,19 @@ use function Safe\define;
 if (!defined('DATEFORMAT')) {
     define('DATEFORMAT', '(19|20)[0-9]{2}-?[0-9]{2}-?[0-9]{2}');
 }
+
+// API route for cron
+Route::group(
+    [
+        'namespace'  => 'FireflyIII\Api\V1\Controllers\System',
+        'prefix'     => 'v1',
+        'as'         => 'api.v1.cron.',
+        'middleware' => [Binder::class, AcceptHeaders::class],
+    ],
+    static function (): void {
+        Route::get('cron/{cliToken}', ['uses' => 'CronController@cron', 'as' => 'index'])->withoutMiddleware(['api']);
+    }
+);
 
 // Autocomplete controllers
 Route::group(
@@ -328,9 +344,9 @@ Route::group(
 // User group API routes.
 Route::group(
     [
-        'namespace' => 'FireflyIII\Api\V1\Controllers\Models\UserGroup',
-        'prefix'    => 'v1/user-groups',
-        'as'        => 'api.v1.user-groups.',
+        'namespace'  => 'FireflyIII\Api\V1\Controllers\Models\UserGroup',
+        'prefix'     => 'v1/user-groups',
+        'as'         => 'api.v1.user-groups.',
     ],
     static function (): void {
         Route::get('', ['uses' => 'IndexController@index', 'as' => 'index']);
@@ -619,12 +635,10 @@ Route::group(
     ],
     static function (): void {
         Route::get('', ['uses' => 'ShowController@index', 'as' => 'index']);
-        Route::post('', ['uses' => 'StoreController@store', 'as' => 'store']);
+        Route::put('{currency_code?}', ['uses' => 'UpdateController@update', 'as' => 'update']);
         Route::get('primary', ['uses' => 'ShowController@showPrimary', 'as' => 'show.primary']);
         Route::get('default', ['uses' => 'ShowController@showPrimary', 'as' => 'show.default']);
         Route::get('{currency_code}', ['uses' => 'ShowController@show', 'as' => 'show']);
-        Route::put('{currency_code?}', ['uses' => 'UpdateController@update', 'as' => 'update']);
-        Route::delete('{currency_code}', ['uses' => 'DestroyController@destroy', 'as' => 'delete']);
 
         Route::post('{currency_code}/enable', ['uses' => 'UpdateController@enable', 'as' => 'enable']);
         Route::post('{currency_code}/disable', ['uses' => 'UpdateController@disable', 'as' => 'disable']);
@@ -640,6 +654,21 @@ Route::group(
         Route::get('{currency_code}/transactions', ['uses' => 'ListController@transactions', 'as' => 'transactions']);
     }
 );
+
+// Transaction currency API routes that require admin rights:
+Route::group(
+    [
+        'namespace'  => 'FireflyIII\Api\V1\Controllers\Models\TransactionCurrency',
+        'prefix'     => 'v1/currencies',
+        'as'         => 'api.v1.currencies.',
+        'middleware' => ['api-admin'],
+    ],
+    static function (): void {
+        Route::delete('{currency_code}', ['uses' => 'DestroyController@destroy', 'as' => 'delete']);
+        Route::post('', ['uses' => 'StoreController@store', 'as' => 'store']);
+    }
+);
+
 
 // Transaction Links API routes:
 Route::group(
@@ -666,11 +695,23 @@ Route::group(
     ],
     static function (): void {
         Route::get('', ['uses' => 'ShowController@index', 'as' => 'index']);
-        Route::post('', ['uses' => 'StoreController@store', 'as' => 'store']);
         Route::get('{linkType}', ['uses' => 'ShowController@show', 'as' => 'show']);
+        Route::get('{linkType}/transactions', ['uses' => 'ListController@transactions', 'as' => 'transactions']);
+    }
+);
+
+// Transaction Link Type API routes that need admin rights.
+Route::group(
+    [
+        'namespace'  => 'FireflyIII\Api\V1\Controllers\Models\TransactionLinkType',
+        'prefix'     => 'v1/link-types',
+        'as'         => 'api.v1.link-types.',
+        'middleware' => ['api-admin'],
+    ],
+    static function (): void {
+        Route::post('', ['uses' => 'StoreController@store', 'as' => 'store']);
         Route::put('{linkType}', ['uses' => 'UpdateController@update', 'as' => 'update']);
         Route::delete('{linkType}', ['uses' => 'DestroyController@destroy', 'as' => 'delete']);
-        Route::get('{linkType}/transactions', ['uses' => 'ListController@transactions', 'as' => 'transactions']);
     }
 );
 
@@ -683,6 +724,7 @@ Route::group(
     ],
     static function (): void {
         Route::get('transactions', ['uses' => 'TransactionController@search', 'as' => 'transactions']);
+        Route::get('transactions/count', ['uses' => 'TransactionController@count', 'as' => 'count']);
         Route::get('accounts', ['uses' => 'AccountController@search', 'as' => 'accounts']);
     }
 );
@@ -703,23 +745,36 @@ Route::group(
 // Configuration API routes
 Route::group(
     [
-        'namespace' => 'FireflyIII\Api\V1\Controllers\System',
-        'prefix'    => 'v1/configuration',
-        'as'        => 'api.v1.configuration.',
+        'namespace'  => 'FireflyIII\Api\V1\Controllers\System',
+        'prefix'     => 'v1/configuration',
+        'as'         => 'api.v1.configuration.',
     ],
     static function (): void {
         Route::get('', ['uses' => 'ConfigurationController@index', 'as' => 'index']);
         Route::get('{eitherConfigKey}', ['uses' => 'ConfigurationController@show', 'as' => 'show']);
+    }
+);
+
+// Configuration API routes that need admin rights
+Route::group(
+    [
+        'namespace'  => 'FireflyIII\Api\V1\Controllers\System',
+        'prefix'     => 'v1/configuration',
+        'as'         => 'api.v1.configuration.',
+        'middleware' => ['api-admin'],
+    ],
+    static function (): void {
         Route::put('{dynamicConfigKey}', ['uses' => 'ConfigurationController@update', 'as' => 'update']);
     }
 );
+
 // Users API routes:
 Route::group(
     [
-        'middleware' => ['auth:api,sanctum', 'bindings'],
         'namespace'  => 'FireflyIII\Api\V1\Controllers\System',
         'prefix'     => 'v1/users',
         'as'         => 'api.v1.users.',
+        'middleware' => ['api-admin'],
     ],
     static function (): void {
         Route::get('', ['uses' => 'UserController@index', 'as' => 'index']);
@@ -733,7 +788,6 @@ Route::group(
 // Batch API routes:
 Route::group(
     [
-        'middleware' => ['auth:api,sanctum', 'bindings'],
         'namespace'  => 'FireflyIII\Api\V1\Controllers\System',
         'prefix'     => 'v1/batch',
         'as'         => 'api.v1.batch.',

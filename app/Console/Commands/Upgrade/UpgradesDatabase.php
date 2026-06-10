@@ -94,7 +94,8 @@ class UpgradesDatabase extends Command
 
     private function callInitialCommands(): void
     {
-        $this->call('migrate', ['--seed'           => true, '--force'          => true, '--no-interaction' => true]);
+        $this->call('firefly-iii:verify-database-connection');
+        $this->call('migrate', ['--seed' => true, '--force' => true, '--no-interaction' => true]);
         $this->call('upgrade:600-pgsql-sequences');
         $this->call('upgrade:480-decrypt-all');
     }

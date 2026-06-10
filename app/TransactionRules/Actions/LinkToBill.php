@@ -57,15 +57,11 @@ class LinkToBill implements ActionInterface
         $bill       = $repository->findByName($billName);
 
         /** @var TransactionJournal $object */
-        $object     = TransactionJournal::with('transactionType')->find($journal['transaction_journal_id']);
+        $object     = TransactionJournal::query()->with('transactionType')->find($journal['transaction_journal_id']);
         $type       = $object->transactionType->type;
 
         if (null !== $bill && TransactionTypeEnum::WITHDRAWAL->value === $type) {
-            $count  = DB::table('transaction_journals')
-                ->where('id', '=', $journal['transaction_journal_id'])
-                ->where('bill_id', $bill->id)
-                ->count()
-            ;
+            $count  = DB::table('transaction_journals')->where('id', '=', $journal['transaction_journal_id'])->where('bill_id', $bill->id)->count();
             if (0 !== $count) {
                 Log::error(sprintf(
                     'RuleAction LinkToBill could not set the bill of journal #%d to bill "%s": already set.',
@@ -86,7 +82,7 @@ class LinkToBill implements ActionInterface
             ));
 
             /** @var TransactionJournal $object */
-            $object = TransactionJournal::where('user_id', $journal['user_id'])->find($journal['transaction_journal_id']);
+            $object = TransactionJournal::query()->where('user_id', $journal['user_id'])->find($journal['transaction_journal_id']);
             event(new TransactionGroupRequestsAuditLogEntry($this->action->rule, $object, 'set_bill', null, $bill->name));
 
             return true;

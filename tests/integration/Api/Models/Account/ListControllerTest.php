@@ -48,16 +48,16 @@ final class ListControllerTest extends TestCase
     {
         $this->actingAs($this->user);
         $response = $this->getJson(route('api.v1.accounts.attachments', ['account' => $this->account->id]));
-        $response->assertStatus(200);
-        $response->assertJson(['meta' => ['pagination' => ['total'       => 2, 'total_pages' => 1]]]);
+        $response->assertOk();
+        $response->assertJson(['meta' => ['pagination' => ['total' => 2, 'total_pages' => 1]]]);
     }
 
     public function testIndexCanChangePageSize(): void
     {
         $this->actingAs($this->user);
-        $response = $this->getJson(route('api.v1.accounts.attachments', ['account' => $this->account->id, 'limit'   => 1]));
-        $response->assertStatus(200);
-        $response->assertJson(['meta' => ['pagination' => ['total'       => 2, 'total_pages' => 2]]]);
+        $response = $this->getJson(route('api.v1.accounts.attachments', ['account' => $this->account->id, 'limit' => 1]));
+        $response->assertOk();
+        $response->assertJson(['meta' => ['pagination' => ['total' => 2, 'total_pages' => 2]]]);
     }
 
     #[Override]
@@ -68,11 +68,7 @@ final class ListControllerTest extends TestCase
         $this->user    = $this->createAuthenticatedUser();
         $this->actingAs($this->user);
 
-        $this->account = Account::factory()
-            ->for($this->user)
-            ->withType(AccountTypeEnum::ASSET)
-            ->create()
-        ;
+        $this->account = Account::factory()->for($this->user)->withType(AccountTypeEnum::ASSET)->create();
         app(AttachmentFactory::class)
             ->setUser($this->user)
             ->create([

@@ -34,7 +34,6 @@ use FireflyIII\Repositories\User\UserRepositoryInterface;
 use FireflyIII\Support\Facades\FireflyConfig;
 use FireflyIII\Support\Facades\Preferences;
 use FireflyIII\User;
-use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -47,7 +46,7 @@ use Psr\Container\NotFoundExceptionInterface;
 /**
  * Class UserController.
  */
-class UserController extends Controller
+final class UserController extends Controller
 {
     protected bool $externalIdentity;
     private UserRepositoryInterface $repository;
@@ -70,9 +69,6 @@ class UserController extends Controller
         $this->externalIdentity = 'web' !== config('firefly.authentication_guard');
     }
 
-    /**
-     * @return Application|Factory|Redirector|RedirectResponse|View
-     */
     public function delete(User $user): Factory|\Illuminate\Contracts\View\View|Redirector|RedirectResponse
     {
         if ($this->externalIdentity) {
@@ -83,7 +79,7 @@ class UserController extends Controller
 
         $subTitle = (string) trans('firefly.delete_user', ['email' => $user->email]);
 
-        return view('settings.users.delete', ['user'     => $user, 'subTitle' => $subTitle]);
+        return view('settings.users.delete', ['user' => $user, 'subTitle' => $subTitle]);
     }
 
     public function deleteInvite(InvitedUser $invitedUser): JsonResponse
@@ -105,7 +101,7 @@ class UserController extends Controller
     /**
      * Destroy a user.
      */
-    public function destroy(User $user): Redirector|RedirectResponse
+    public function destroy(User $user): RedirectResponse
     {
         if ($this->externalIdentity) {
             request()->session()->flash('error', trans('firefly.external_user_mgt_disabled'));
@@ -135,7 +131,7 @@ class UserController extends Controller
         }
         session()->forget('users.edit.fromUpdate');
 
-        $subTitle       = (string) trans('firefly.edit_user', ['email'     => $user->email]);
+        $subTitle       = (string) trans('firefly.edit_user', ['email' => $user->email]);
         $subTitleIcon   = 'fa-user-o';
         $currentUser    = auth()->user();
         $isAdmin        = $this->repository->hasRole($user, 'owner');
@@ -216,7 +212,7 @@ class UserController extends Controller
     {
         $title         = (string) trans('firefly.system_settings');
         $mainTitleIcon = 'fa-hand-spock-o';
-        $subTitle      = (string) trans('firefly.single_user_administration', ['email'      => $user->email]);
+        $subTitle      = (string) trans('firefly.single_user_administration', ['email' => $user->email]);
         $subTitleIcon  = 'fa-user';
         $information   = $this->repository->getUserData($user);
 
@@ -233,7 +229,7 @@ class UserController extends Controller
     /**
      * Update single user.
      *
-     * @return $this|Redirector|RedirectResponse
+     * @return RedirectResponse
      */
     public function update(UserFormRequest $request, User $user)
     {

@@ -88,25 +88,8 @@ class ExportDataGenerator
     private bool $exportTransactions    = false;
     private Carbon $start;
     private User $user;
-    private UserGroup $userGroup; // @phpstan-ignore-line
 
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
-
-    // @phpstan-ignore-line
+    // private UserGroup $userGroup;
 
     public function __construct()
     {
@@ -240,7 +223,7 @@ class ExportDataGenerator
 
     public function setUserGroup(UserGroup $userGroup): void
     {
-        $this->userGroup = $userGroup;
+        // $this->userGroup = $userGroup;
     }
 
     /**
@@ -301,7 +284,7 @@ class ExportDataGenerator
         }
 
         // load the CSV document from a string
-        $csv         = Writer::createFromString();
+        $csv         = Writer::fromString();
 
         // insert the header
         try {
@@ -370,7 +353,7 @@ class ExportDataGenerator
         }
 
         // load the CSV document from a string
-        $csv        = Writer::createFromString();
+        $csv        = Writer::fromString();
 
         // insert the header
         try {
@@ -429,7 +412,7 @@ class ExportDataGenerator
         }
 
         // load the CSV document from a string
-        $csv         = Writer::createFromString();
+        $csv         = Writer::fromString();
 
         // insert the header
         try {
@@ -474,7 +457,7 @@ class ExportDataGenerator
         }
 
         // load the CSV document from a string
-        $csv        = Writer::createFromString();
+        $csv        = Writer::fromString();
 
         // insert the header
         try {
@@ -554,7 +537,7 @@ class ExportDataGenerator
         }
 
         // load the CSV document from a string
-        $csv          = Writer::createFromString();
+        $csv          = Writer::fromString();
 
         // insert the header
         try {
@@ -721,7 +704,7 @@ class ExportDataGenerator
             }
         }
         // load the CSV document from a string
-        $csv            = Writer::createFromString();
+        $csv            = Writer::fromString();
 
         // insert the header
         try {
@@ -868,7 +851,7 @@ class ExportDataGenerator
         }
 
         // load the CSV document from a string
-        $csv       = Writer::createFromString();
+        $csv       = Writer::fromString();
 
         // insert the header
         try {
@@ -900,7 +883,7 @@ class ExportDataGenerator
      */
     private function exportTags(): string
     {
-        $header   = ['user_id', 'tag_id', 'created_at', 'updated_at', 'tag', 'date', 'description', 'latitude', 'longitude', 'zoom_level'];
+        $header   = ['user_id', 'tag_id', 'created_at', 'updated_at', 'tag', 'date', 'description']; // 'latitude', 'longitude', 'zoom_level'
 
         $tagRepos = app(TagRepositoryInterface::class);
         $tagRepos->setUser($this->user);
@@ -917,14 +900,14 @@ class ExportDataGenerator
                 $tag->tag,
                 $tag->date?->format('Y-m-d'),
                 $tag->description,
-                $tag->latitude,
-                $tag->longitude,
-                $tag->zoomLevel,
+                //                $tag->latitude,
+                //                $tag->longitude,
+                //                $tag->zoomLevel,
             ];
         }
 
         // load the CSV document from a string
-        $csv      = Writer::createFromString();
+        $csv      = Writer::fromString();
 
         // insert the header
         try {
@@ -1120,7 +1103,7 @@ class ExportDataGenerator
         }
 
         // load the CSV document from a string
-        $csv        = Writer::createFromString();
+        $csv        = Writer::fromString();
 
         // insert the header
         try {

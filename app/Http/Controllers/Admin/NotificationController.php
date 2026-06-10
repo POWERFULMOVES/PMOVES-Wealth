@@ -34,7 +34,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
-class NotificationController extends Controller
+final class NotificationController extends Controller
 {
     public function index(): View
     {
@@ -124,8 +124,16 @@ class NotificationController extends Controller
             return redirect(route('settings.notification.index'));
         }
 
-        $all     = $request->all();
-        $channel = $all['test_submit'] ?? '';
+        /** @var int $lastNotification */
+        $lastNotification = FireflyConfig::get('last_test_notification', 123)->data;
+        if ((time() - $lastNotification) < 120) {
+            session()->flash('error', (string) trans('firefly.test_rate_limited'));
+
+            return redirect(route('settings.notification.index'));
+        }
+
+        $all              = $request->only(['test_submit']);
+        $channel          = $all['test_submit'] ?? '';
 
         switch ($channel) {
             default:
@@ -142,6 +150,7 @@ class NotificationController extends Controller
                 event(new OwnerTestsNotificationChannel($channel, $owner));
                 session()->flash('success', (string) trans('firefly.notification_test_executed', ['channel' => $channel]));
         }
+        FireflyConfig::set('last_test_notification', time());
 
         return redirect(route('settings.notification.index'));
     }
