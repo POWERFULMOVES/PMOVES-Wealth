@@ -188,7 +188,7 @@ class TransactionJournalFactory
 
     protected function storeMeta(TransactionJournal $journal, array $data, string $field): void
     {
-        $set     = ['journal' => $journal, 'name'    => $field, 'data'    => (string) ($data[$field] ?? '')];
+        $set     = ['journal' => $journal, 'name' => $field, 'data' => (string) ($data[$field] ?? '')];
         if (array_key_exists($field, $data) && $data[$field] instanceof Carbon) {
             $data[$field]->setTimezone(config('app.timezone'));
             Log::debug(sprintf('%s Date: %s (%s)', $field, $data[$field], $data[$field]->timezone->getName()));
@@ -338,7 +338,7 @@ class TransactionJournalFactory
             'date_tz'                 => $carbon->format('e'),
             'order'                   => $order,
             'tag_count'               => 0,
-            'completed'               => !$row['batch_submission'],
+            'completed'               => is_bool($row['batch_submission']) && !$row['batch_submission'],
         ]);
         Log::debug(sprintf('Created new journal #%d: "%s"', $journal->id, $journal->description));
 
@@ -425,7 +425,8 @@ class TransactionJournalFactory
         Log::debug('Will verify duplicate!');
 
         /** @var null|TransactionJournalMeta $result */
-        $result = TransactionJournalMeta::withTrashed()
+        $result = TransactionJournalMeta::query()
+            ->withTrashed()
             ->leftJoin('transaction_journals', 'transaction_journals.id', '=', 'journal_meta.transaction_journal_id')
             ->whereNotNull('transaction_journals.id')
             ->where('transaction_journals.user_id', $this->user->id)
@@ -574,16 +575,11 @@ class TransactionJournalFactory
             return [$sourceAccount, $account];
         }
 
-        if (!$sourceAccount instanceof Account) { // @phpstan-ignore-line
-            Log::debug('Source account is NULL, destination account is not.');
-            $account = $this->accountRepository->getReconciliation($destinationAccount);
-            Log::debug(sprintf('Will return account #%d ("%s") of type "%s"', $account->id, $account->name, $account->accountType->type));
+        Log::debug('Source account is NULL, destination account is not.');
+        $account = $this->accountRepository->getReconciliation($destinationAccount);
+        Log::debug(sprintf('Will return account #%d ("%s") of type "%s"', $account->id, $account->name, $account->accountType->type));
 
-            return [$account, $destinationAccount];
-        }
-        Log::debug('Unused fallback'); // @phpstan-ignore-line
-
-        return [$sourceAccount, $destinationAccount];
+        return [$account, $destinationAccount];
     }
 
     private function storeLocation(TransactionJournal $journal, NullArrayObject $data): void

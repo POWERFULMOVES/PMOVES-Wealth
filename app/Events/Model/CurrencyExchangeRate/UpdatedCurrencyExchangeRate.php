@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 /*
- * api-noauth.php
- * Copyright (c) 2021 james@firefly-iii.org
+ * UpdatedCurrencyExchangeRate.php
+ * Copyright (c) 2026 james@firefly-iii.org
  *
  * This file is part of Firefly III (https://github.com/firefly-iii).
  *
@@ -20,20 +22,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-declare(strict_types=1);
+namespace FireflyIII\Events\Model\CurrencyExchangeRate;
 
-use Illuminate\Support\Facades\Route;
-// Cron job API routes:
-use FireflyIII\Http\Middleware\AcceptHeaders;
+use FireflyIII\Events\Event;
+use FireflyIII\Models\CurrencyExchangeRate;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
-Route::group(
-    [
-        'namespace'  => 'FireflyIII\Api\V1\Controllers\System',
-        'prefix'     => '',
-        'as'         => 'api.v1.cron.',
-        'middleware' => [AcceptHeaders::class],
-    ],
-    static function (): void {
-        Route::get('{cliToken}', ['uses' => 'CronController@cron', 'as' => 'index']);
+class UpdatedCurrencyExchangeRate extends Event
+{
+    use SerializesModels;
+
+    public function __construct(
+        public CurrencyExchangeRate $rate
+    ) {
+        Log::debug(sprintf('UpdatedCurrencyExchangeRate(#%d) Event', $rate->id));
     }
-);
+}

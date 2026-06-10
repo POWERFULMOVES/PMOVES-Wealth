@@ -42,14 +42,13 @@ use FireflyIII\User;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 /**
  * Class EditController
  */
-class EditController extends Controller
+final class EditController extends Controller
 {
     private AttachmentHelperInterface $attachments;
     private BillRepositoryInterface $billRepository;
@@ -176,7 +175,7 @@ class EditController extends Controller
     /**
      * Update the recurring transaction.
      *
-     * @return Redirector|RedirectResponse
+     * @return RedirectResponse
      *
      * @throws FireflyException
      */

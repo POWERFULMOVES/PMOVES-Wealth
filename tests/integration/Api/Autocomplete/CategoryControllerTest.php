@@ -47,7 +47,7 @@ final class CategoryControllerTest extends TestCase
     {
         // test API
         $response = $this->get(route('api.v1.autocomplete.categories'), ['Accept' => 'application/json']);
-        $response->assertStatus(401);
+        $response->assertUnauthorized();
         $response->assertHeader('Content-Type', 'application/json');
         $response->assertContent('{"message":"Unauthenticated.","exception":"AuthenticationException"}');
     }
@@ -59,7 +59,7 @@ final class CategoryControllerTest extends TestCase
         $this->actingAs($user);
 
         $response = $this->get(route('api.v1.autocomplete.categories'), ['Accept' => 'application/json']);
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertHeader('Content-Type', 'application/json');
     }
 
@@ -70,7 +70,7 @@ final class CategoryControllerTest extends TestCase
 
         $this->createTestCategories(5, $user);
         $response = $this->get(route('api.v1.autocomplete.categories'), ['Accept' => 'application/json']);
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertHeader('Content-Type', 'application/json');
         $response->assertJsonCount(5);
         $response->assertJsonFragment(['name' => 'Category 1']);
@@ -85,7 +85,7 @@ final class CategoryControllerTest extends TestCase
         $this->createTestCategories(20, $user);
         $response = $this->get(route('api.v1.autocomplete.categories', ['query' => 'Category 1', 'limit' => 20]), ['Accept' => 'application/json']);
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertHeader('Content-Type', 'application/json');
         // Category 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (11)
         $response->assertJsonCount(11);
@@ -100,7 +100,7 @@ final class CategoryControllerTest extends TestCase
         $this->createTestCategories(5, $user);
         $response = $this->get(route('api.v1.autocomplete.categories', ['query' => 'Category', 'limit' => 3]), ['Accept' => 'application/json']);
 
-        $response->assertStatus(200);
+        $response->assertOk();
         $response->assertHeader('Content-Type', 'application/json');
         $response->assertJsonCount(3);
     }
@@ -108,7 +108,7 @@ final class CategoryControllerTest extends TestCase
     private function createTestCategories(int $count, User $user): void
     {
         for ($i = 1; $i <= $count; ++$i) {
-            $category = Category::create(['user_id'       => $user->id, 'name'          => 'Category '.$i, 'user_group_id' => $user->user_group_id]);
+            $category = Category::create(['user_id' => $user->id, 'name' => 'Category '.$i, 'user_group_id' => $user->user_group_id]);
         }
     }
 }

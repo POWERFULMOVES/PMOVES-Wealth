@@ -31,13 +31,12 @@ use FireflyIII\Support\Facades\FireflyConfig;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Redirector;
 use Illuminate\View\View;
 
 /**
  * Class HomeController.
  */
-class UpdateController extends Controller
+final class UpdateController extends Controller
 {
     use UpdateTrait;
 
@@ -94,7 +93,7 @@ class UpdateController extends Controller
     /**
      * Post new settings.
      */
-    public function post(Request $request): Redirector|RedirectResponse
+    public function post(Request $request): RedirectResponse
     {
         $checkForUpdates = (int) $request->get('check_for_updates');
         $channel         = $request->get('update_channel');
@@ -114,8 +113,27 @@ class UpdateController extends Controller
     public function updateCheck(): RedirectResponse
     {
         $release = $this->getLatestRelease();
+        $level   = 'info';
+        $message = trans('firefly.no_new_release_available');
+        if ('' !== $release->getError()) {
+            $level   = 'error';
+            $message = $release->getError();
+        }
+        if ($release->isNewVersionAvailable()) {
+            // if running develop, slightly different message.
+            if (str_contains(config('firefly.version'), 'develop')) {
+                $message = trans('firefly.update_current_dev_older', ['version' => config('firefly.version'), 'new_version' => $release->getNewVersion()]);
+            }
+            if (!str_contains(config('firefly.version'), 'develop')) {
+                $message = trans('firefly.update_new_version_alert', [
+                    'your_version' => config('firefly.version'),
+                    'new_version'  => $release->getNewVersion(),
+                    'date'         => $release->getPublishedAt()->format('Y-m-d H:i:s'),
+                ]);
+            }
+        }
 
-        session()->flash($release['level'], $release['message']);
+        session()->flash($level, $message);
 
         return redirect(route('settings.update-check'));
     }

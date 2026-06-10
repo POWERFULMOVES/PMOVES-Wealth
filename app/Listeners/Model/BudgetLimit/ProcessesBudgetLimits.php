@@ -35,12 +35,14 @@ use FireflyIII\Support\Models\AvailableBudgetCalculator;
 use FireflyIII\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class ProcessesBudgetLimits implements ShouldQueue
 {
     public function handle(CreatedBudgetLimit|DestroyedBudgetLimit|UpdatedBudgetLimit $event): void
     {
-        if ($event instanceof DestroyedBudgetLimit && null !== $event->user) {
+        Log::debug(sprintf('Now in ProcessesBudgetLimits::handle for event %s', get_class($event)));
+        if ($event instanceof DestroyedBudgetLimit) {
             // need to recalculate all available budgets for this user.
             $calculator = new AvailableBudgetCalculator();
             $calculator->setUser($event->user);
@@ -68,6 +70,7 @@ class ProcessesBudgetLimits implements ShouldQueue
 
         // do webhooks:
         if ($event->createWebhookMessages) {
+            Log::debug('Event says to create webhook messages');
             $this->createWebhookMessages($event->budgetLimit->budget->user, $event->budgetLimit->budget, WebhookTrigger::STORE_UPDATE_BUDGET_LIMIT);
         }
     }

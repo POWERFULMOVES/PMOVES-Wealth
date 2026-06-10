@@ -40,26 +40,8 @@ use Override;
 
 class AvailableBudgetEnrichment implements EnrichmentInterface
 {
-    private Collection $collection; // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    private readonly bool $convertToPrimary; // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
+    private Collection $collection;
+    private readonly bool $convertToPrimary;
     private array $currencies            = [];
     private array $currencyIds           = [];
     private array $ids                   = [];
@@ -140,7 +122,7 @@ class AvailableBudgetEnrichment implements EnrichmentInterface
     private function collectCurrencies(): void
     {
         $ids = array_unique(array_values($this->currencyIds));
-        $set = TransactionCurrency::whereIn('id', $ids)->get();
+        $set = TransactionCurrency::query()->whereIn('id', $ids)->get();
         foreach ($set as $currency) {
             $this->currencies[(int) $currency->id] = $currency;
         }

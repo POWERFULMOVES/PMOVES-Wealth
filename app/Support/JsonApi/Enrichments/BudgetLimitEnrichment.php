@@ -40,16 +40,7 @@ use Illuminate\Support\Facades\Log;
 class BudgetLimitEnrichment implements EnrichmentInterface
 {
     private Collection $collection;
-    private readonly bool $convertToPrimary; // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
+    private readonly bool $convertToPrimary;
     private array $currencies  = [];
     private array $currencyIds = [];
     private Carbon $end;
@@ -118,12 +109,8 @@ class BudgetLimitEnrichment implements EnrichmentInterface
 
     private function collectBudgets(): void
     {
-        $budgetIds  = $this->collection
-            ->pluck('budget_id')
-            ->unique()
-            ->toArray()
-        ;
-        $budgets    = Budget::whereIn('id', $budgetIds)->get();
+        $budgetIds  = $this->collection->pluck('budget_id')->unique()->toArray();
+        $budgets    = Budget::query()->whereIn('id', $budgetIds)->get();
 
         $repository = app(OperationsRepository::class);
         $repository->setUser($this->user);
@@ -161,10 +148,11 @@ class BudgetLimitEnrichment implements EnrichmentInterface
     private function collectCurrencies(): void
     {
         $this->currencies[$this->primaryCurrency->id] = $this->primaryCurrency;
-        $currencies                                   = TransactionCurrency::whereIn('id', $this->currencyIds)->whereNot(
-            'id',
-            $this->primaryCurrency->id
-        )->get();
+        $currencies                                   = TransactionCurrency::query()
+            ->whereIn('id', $this->currencyIds)
+            ->whereNot('id', $this->primaryCurrency->id)
+            ->get()
+        ;
         foreach ($currencies as $currency) {
             $this->currencies[(int) $currency->id] = $currency;
         }
@@ -217,14 +205,8 @@ class BudgetLimitEnrichment implements EnrichmentInterface
 
     private function stringifyIds(): void
     {
-        $this->expenses   = array_map(static fn ($first): array => array_map(static function (array $second): array {
+        $this->expenses = array_map(static fn ($first): array => array_map(static function (array $second): array {
             $second['currency_id'] = (string) ($second['currency_id'] ?? 0);
-
-            return $second;
-        }, $first), $this->expenses);
-
-        $this->pcExpenses = array_map(static fn (array $first): array => array_map(static function (array $second): array {
-            $second['currency_id'] ??= 0;
 
             return $second;
         }, $first), $this->expenses);

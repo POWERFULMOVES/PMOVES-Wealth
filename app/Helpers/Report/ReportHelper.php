@@ -40,8 +40,7 @@ class ReportHelper implements ReportHelperInterface
     /**
      * ReportHelper constructor.
      */
-    public function __construct(
-        /** @var BudgetRepositoryInterface The budget repository */
+    public function __construct(/** @var BudgetRepositoryInterface The budget repository */
         protected BudgetRepositoryInterface $budgetRepository
     ) {}
 
@@ -56,7 +55,7 @@ class ReportHelper implements ReportHelperInterface
         /** @var BillRepositoryInterface $repository */
         $repository = app(BillRepositoryInterface::class);
         $bills      = $repository->getBillsForAccounts($accounts);
-        $report     = ['bills'     => []];
+        $report     = ['bills' => []];
 
         /** @var Bill $bill */
         foreach ($bills as $bill) {

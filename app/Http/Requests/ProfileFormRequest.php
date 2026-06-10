@@ -35,6 +35,8 @@ class ProfileFormRequest extends FormRequest
 {
     use ChecksLogin;
 
+    protected array $acceptedRoles = [];
+
     /**
      * Rules for this request.
      */
@@ -43,7 +45,7 @@ class ProfileFormRequest extends FormRequest
         // fixed
         return [
             'current_password'          => 'required',
-            'new_password'              => 'required|confirmed|secure_password|min:16',
+            'new_password'              => ['required', 'confirmed', 'secure_password', 'min:16'],
             'new_password_confirmation' => 'required',
         ];
     }

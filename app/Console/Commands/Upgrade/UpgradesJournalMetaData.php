@@ -70,20 +70,12 @@ class UpgradesJournalMetaData extends Command
 
     private function getIdsForBudgets(): array
     {
-        $transactions = DB::table('budget_transaction')
-            ->distinct()
-            ->pluck('transaction_id')
-            ->toArray()
-        ;
+        $transactions = DB::table('budget_transaction')->distinct()->pluck('transaction_id')->toArray();
         $array        = [];
         $chunks       = array_chunk($transactions, 500);
 
         foreach ($chunks as $chunk) {
-            $set   = DB::table('transactions')
-                ->whereIn('transactions.id', $chunk)
-                ->pluck('transaction_journal_id')
-                ->toArray()
-            ;
+            $set   = DB::table('transactions')->whereIn('transactions.id', $chunk)->pluck('transaction_journal_id')->toArray();
             $array = array_merge($array, $set);
         }
 
@@ -92,20 +84,12 @@ class UpgradesJournalMetaData extends Command
 
     private function getIdsForCategories(): array
     {
-        $transactions = DB::table('category_transaction')
-            ->distinct()
-            ->pluck('transaction_id')
-            ->toArray()
-        ;
+        $transactions = DB::table('category_transaction')->distinct()->pluck('transaction_id')->toArray();
         $array        = [];
         $chunks       = array_chunk($transactions, 500);
 
         foreach ($chunks as $chunk) {
-            $set   = DB::table('transactions')
-                ->whereIn('transactions.id', $chunk)
-                ->pluck('transaction_journal_id')
-                ->toArray()
-            ;
+            $set   = DB::table('transactions')->whereIn('transactions.id', $chunk)->pluck('transaction_journal_id')->toArray();
             $array = array_merge($array, $set);
         }
 
@@ -147,7 +131,7 @@ class UpgradesJournalMetaData extends Command
         $allIds   = $this->getIdsForBudgets();
         $chunks   = array_chunk($allIds, 500);
         foreach ($chunks as $journalIds) {
-            $collected = TransactionJournal::whereIn('id', $journalIds)->with(['transactions', 'budgets', 'transactions.budgets'])->get();
+            $collected = TransactionJournal::query()->whereIn('id', $journalIds)->with(['transactions', 'budgets', 'transactions.budgets'])->get();
             $journals  = $journals->merge($collected);
         }
 
@@ -196,7 +180,7 @@ class UpgradesJournalMetaData extends Command
 
         $chunks   = array_chunk($allIds, 500);
         foreach ($chunks as $chunk) {
-            $collected = TransactionJournal::whereIn('id', $chunk)->with(['transactions', 'categories', 'transactions.categories'])->get();
+            $collected = TransactionJournal::query()->whereIn('id', $chunk)->with(['transactions', 'categories', 'transactions.categories'])->get();
             $journals  = $journals->merge($collected);
         }
 

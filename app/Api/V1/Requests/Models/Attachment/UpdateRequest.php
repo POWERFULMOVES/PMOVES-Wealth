@@ -37,6 +37,8 @@ class UpdateRequest extends FormRequest
     use ChecksLogin;
     use ConvertsDataTypes;
 
+    protected array $acceptedRoles = [];
+
     /**
      * Get all data from the request.
      */
@@ -66,7 +68,7 @@ class UpdateRequest extends FormRequest
         return [
             'filename'        => ['min:1', 'max:255'],
             'title'           => ['min:1', 'max:255'],
-            'notes'           => 'min:1|max:32768',
+            'notes'           => ['min:1', 'max:32768'],
             'attachable_type' => sprintf('in:%s', $models),
             'attachable_id'   => ['numeric', new IsValidAttachmentModel($model)],
         ];

@@ -26,6 +26,7 @@ namespace FireflyIII\Api\V1\Requests\Models\BudgetLimit;
 
 use Carbon\Carbon;
 use FireflyIII\Factory\TransactionCurrencyFactory;
+use FireflyIII\Models\Budget;
 use FireflyIII\Repositories\Currency\CurrencyRepositoryInterface;
 use FireflyIII\Rules\IsBoolean;
 use FireflyIII\Rules\IsValidPositiveAmount;
@@ -43,6 +44,8 @@ class StoreRequest extends FormRequest
 {
     use ChecksLogin;
     use ConvertsDataTypes;
+
+    protected array $acceptedRoles = [];
 
     /**
      * Get all data from the request.
@@ -68,12 +71,12 @@ class StoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'start'         => 'required|before:end|date',
-            'end'           => 'required|after:start|date',
+            'start'         => ['required', 'before:end', 'date'],
+            'end'           => ['required', 'after:start', 'date'],
             'amount'        => ['required', new IsValidPositiveAmount()],
-            'currency_id'   => 'numeric|exists:transaction_currencies,id',
-            'currency_code' => 'min:3|max:51|exists:transaction_currencies,code',
-            'notes'         => 'nullable|min:0|max:32768',
+            'currency_id'   => ['numeric', 'exists:transaction_currencies,id'],
+            'currency_code' => ['min:3', 'max:51', 'exists:transaction_currencies,code'],
+            'notes'         => ['nullable', 'min:0', 'max:32768'],
 
             // webhooks
             'fire_webhooks' => [new IsBoolean()],
@@ -85,6 +88,7 @@ class StoreRequest extends FormRequest
      */
     public function withValidator(Validator $validator): void
     {
+        /** @var Budget $budget */
         $budget = $this->route()->parameter('budget');
         $validator->after(static function (Validator $validator) use ($budget): void {
             if (0 !== count($validator->failed())) {

@@ -23,6 +23,7 @@
 declare(strict_types=1);
 
 return [
+    'verifying_password'              => 'Verifying password...',
     'invalid_account_list'            => 'Invalid account type list entry ":value"',
     'invalid_transaction_type_list'   => 'Invalid transaction type list',
     'limit_exists'                    => 'There is already a budget limit (amount) for this budget and currency in the given period.',
@@ -70,6 +71,7 @@ return [
     'rule_action_value'               => 'This value is invalid for the selected action.',
     'file_already_attached'           => 'Uploaded file ":name" is already attached to this object.',
     'file_attached'                   => 'Successfully uploaded file ":name".',
+    'cannot_add_piggy_amount'         => 'This amount cannot be added to the piggy bank.',
     'file_zero'                       => 'The file is zero bytes in size.',
     'must_exist'                      => 'The ID in field :attribute does not exist in the database.',
     'all_accounts_equal'              => 'All accounts in this field must be equal.',
@@ -139,6 +141,8 @@ return [
     'in'                              => 'The selected :attribute is invalid.',
     'integer'                         => 'The :attribute must be an integer.',
     'ip'                              => 'The :attribute must be a valid IP address.',
+    'no_reserved_ip'                  => 'The URL must point to a valid IP address.',
+    'bad_url_prefix'                  => 'This URL is invalid.',
     'json'                            => 'The :attribute must be a valid JSON string.',
     'max.numeric'                     => 'The :attribute may not be greater than :max.',
     'max.file'                        => 'The :attribute may not be greater than :max kilobytes.',

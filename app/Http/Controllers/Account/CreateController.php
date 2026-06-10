@@ -34,16 +34,13 @@ use FireflyIII\Support\Http\Controllers\ModelInformation;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Class CreateController
  */
-class CreateController extends Controller
+final class CreateController extends Controller
 {
     use ModelInformation;
 
@@ -81,13 +78,15 @@ class CreateController extends Controller
         $roles               = $this->getRoles();
         $liabilityTypes      = $this->getLiabilityTypes();
         $hasOldInput         = null !== $request->old('_token');
-        $locations           = ['location'           => [
-            'latitude'     => $hasOldInput ? old('location_latitude') : config('firefly.default_location.latitude'),
-            'longitude'    => $hasOldInput ? old('location_longitude') : config('firefly.default_location.longitude'),
-            'zoom_level'   => $hasOldInput ? old('location_zoom_level') : config('firefly.default_location.zoom_level'),
-            'has_location' => $hasOldInput && 'true' === old('location_has_location'),
-        ]];
-        $liabilityDirections = ['debit'  => trans('firefly.liability_direction_debit'), 'credit' => trans('firefly.liability_direction_credit')];
+        $locations           = [
+            'location' => [
+                'latitude'     => $hasOldInput ? old('location_latitude') : config('firefly.default_location.latitude'),
+                'longitude'    => $hasOldInput ? old('location_longitude') : config('firefly.default_location.longitude'),
+                'zoom_level'   => $hasOldInput ? old('location_zoom_level') : config('firefly.default_location.zoom_level'),
+                'has_location' => $hasOldInput && 'true' === old('location_has_location'),
+            ],
+        ];
+        $liabilityDirections = ['debit' => trans('firefly.liability_direction_debit'), 'credit' => trans('firefly.liability_direction_credit')];
 
         // interest calculation periods:
         $interestPeriods     = [];
@@ -126,15 +125,7 @@ class CreateController extends Controller
         ]);
     }
 
-    /**
-     * Store the new account.
-     *
-     * @return Redirector|RedirectResponse
-     *
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     */
-    public function store(AccountFormRequest $request)
+    public function store(AccountFormRequest $request): RedirectResponse
     {
         $data      = $request->getAccountData();
         $account   = $this->repository->store($data);

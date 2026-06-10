@@ -32,11 +32,13 @@ class ApiRequest extends FormRequest
     use ChecksLogin;
     use ConvertsDataTypes;
 
-    protected string $required = '';
+    protected array $acceptedRoles = [];
+
+    protected string $required     = '';
 
     public function handleConfig(array $config): void
     {
-        if (in_array('required', $config, true)) {
+        if (in_array('required', $config, strict: true)) {
             $this->required = 'required';
         }
     }

@@ -45,7 +45,7 @@ use function Safe\file_put_contents;
 /**
  * Class InstallController
  */
-class InstallController extends Controller
+final class InstallController extends Controller
 {
     use GetConfigurationData;
 
@@ -58,20 +58,13 @@ class InstallController extends Controller
     private array $upgradeCommands      = [
         // there are 5 initial commands
         // Check 4 places: InstallController, Docker image, UpgradeDatabase, composer.json
-        'migrate'                            => ['--seed'  => true, '--force' => true],
+        'firefly-iii:create-database'        => [],
+        'migrate'                            => ['--seed' => true, '--force' => true],
         'generate-keys'                      => [], // an exception :(
         'firefly-iii:upgrade-database'       => [],
-        'firefly-iii:set-latest-version'     => ['--james-is-cool'     => true],
+        'firefly-iii:set-latest-version'     => ['--james-is-cool' => true],
         'firefly-iii:verify-security-alerts' => [],
     ];
-
-    /**
-     * InstallController constructor.
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     /**
      * Show index.
@@ -109,7 +102,7 @@ class InstallController extends Controller
     public function runCommand(Request $request): JsonResponse
     {
         $requestIndex = (int) $request->get('index');
-        $response     = ['hasNextCommand' => false, 'done'           => true, 'previous'       => null, 'error'          => false, 'errorMessage'   => null];
+        $response     = ['hasNextCommand' => false, 'done' => true, 'previous' => null, 'error' => false, 'errorMessage' => null];
 
         Log::debug(sprintf('Will now run commands. Request index is %d', $requestIndex));
         $indexes      = array_keys($this->upgradeCommands);

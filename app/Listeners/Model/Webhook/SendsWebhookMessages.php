@@ -43,7 +43,8 @@ class SendsWebhookMessages implements ShouldQueue
         }
 
         // kick off the job!
-        $messages = WebhookMessage::where('webhook_messages.sent', false)
+        $messages = WebhookMessage::query()
+            ->where('webhook_messages.sent', false)
             ->get(['webhook_messages.*'])
             ->filter(static fn (WebhookMessage $message): bool => $message->webhookAttempts()->count() <= 2)
             ->splice(0, 5)
@@ -58,13 +59,13 @@ class SendsWebhookMessages implements ShouldQueue
                 $message->save();
                 Log::debug(sprintf('Send message #%d', $message->id));
                 SendWebhookMessage::dispatch($message)->afterResponse();
+
+                continue;
             }
-            if (false !== $message->sent) {
-                Log::debug(sprintf('Skip message #%d', $message->id));
-            }
+            Log::debug(sprintf('Skip message #%d', $message->id));
         }
 
         // clean up sent messages table:
-        WebhookMessage::where('webhook_messages.sent', true)->where('webhook_messages.created_at', '<', now()->subDays(14))->delete();
+        WebhookMessage::query()->where('webhook_messages.sent', true)->where('webhook_messages.created_at', '<', now()->subDays(14))->delete();
     }
 }

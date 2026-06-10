@@ -117,7 +117,7 @@ trait CreateStuff
         /** @var AccountRepositoryInterface $repository */
         $repository     = app(AccountRepositoryInterface::class);
         $savingsAccount = [
-            'name'                 => (string) trans('firefly.new_savings_account', ['bank_name'                 => $request->get('bank_name')], $language),
+            'name'                 => (string) trans('firefly.new_savings_account', ['bank_name' => $request->get('bank_name')], $language),
             'iban'                 => null,
             'account_type_name'    => 'asset',
             'account_type_id'      => null,
@@ -138,6 +138,6 @@ trait CreateStuff
      */
     protected function createUser(array $data): User // create object
     {
-        return User::create(['email'    => $data['email'], 'password' => bcrypt($data['password'])]);
+        return User::create(['email' => $data['email'], 'password' => bcrypt($data['password'])]);
     }
 }

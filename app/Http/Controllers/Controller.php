@@ -80,6 +80,14 @@ abstract class Controller extends BaseController
         View::share('FF_VERSION', config('firefly.version'));
         View::share('FF_BUILD_TIME', config('firefly.build_time'));
 
+        // this breaks when running < PHP 8.5 and is totally intentional.
+        $input            = ' James is cool';
+        $output           = $input
+            |> trim(...)
+            |> (fn (string $string) => str_replace(' ', '-', $string))
+            |> (fn (string $string) => str_replace(['.', '/', '…'], '', $string))
+            |> strtolower(...);
+
         // is webhooks enabled?
         View::share(
             'featuringWebhooks',
@@ -91,10 +99,11 @@ abstract class Controller extends BaseController
         $logoutUrl        = config('firefly.custom_logout_url');
 
         // overrule v2 layout back to v1.
+
         if ('true' === request()->get('force_default_layout') && 'v2' === config('view.layout')) {
             // config('view.layout','v1');
             Config::set('view.layout', 'v1');
-            View::getFinder()->setPaths([realpath(base_path('resources/views'))]); // @phpstan-ignore-line
+            View::getFinder()->setPaths([realpath(base_path('resources/views'))]);
         }
 
         View::share('authGuard', $authGuard);

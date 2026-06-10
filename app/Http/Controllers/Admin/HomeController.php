@@ -35,7 +35,7 @@ use Psr\Container\NotFoundExceptionInterface;
 /**
  * Class HomeController.
  */
-class HomeController extends Controller
+final class HomeController extends Controller
 {
     /**
      * ConfigurationController constructor.
@@ -65,6 +65,6 @@ class HomeController extends Controller
             $email = $pref->data;
         }
 
-        return view('settings.index', ['title'         => $title, 'mainTitleIcon' => $mainTitleIcon, 'email'         => $email]);
+        return view('settings.index', ['title' => $title, 'mainTitleIcon' => $mainTitleIcon, 'email' => $email]);
     }
 }

@@ -35,7 +35,7 @@ use Illuminate\View\View;
 /**
  * Class DeleteController
  */
-class DeleteController extends Controller
+final class DeleteController extends Controller
 {
     private PiggyBankRepositoryInterface $piggyRepos;
 
@@ -68,7 +68,7 @@ class DeleteController extends Controller
         // put previous url in session
         $this->rememberPreviousUrl('piggy-banks.delete.url');
 
-        return view('piggy-banks.delete', ['piggyBank' => $piggyBank, 'subTitle'  => $subTitle]);
+        return view('piggy-banks.delete', ['piggyBank' => $piggyBank, 'subTitle' => $subTitle]);
     }
 
     /**

@@ -62,14 +62,14 @@ class ConvertToTransfer implements ActionInterface
 
         // make object from array (so the data is fresh).
         /** @var null|TransactionJournal $object */
-        $object       = TransactionJournal::where('user_id', $journal['user_id'])->find($journal['transaction_journal_id']);
+        $object       = TransactionJournal::query()->where('user_id', $journal['user_id'])->find($journal['transaction_journal_id']);
         if (null === $object) {
             Log::error(sprintf('Cannot find journal #%d, cannot convert to transfer.', $journal['transaction_journal_id']));
             event(new RuleActionFailedOnArray($this->action, $journal, trans('rules.journal_not_found')));
 
             return false;
         }
-        $groupCount   = TransactionJournal::where('transaction_group_id', $journal['transaction_group_id'])->count();
+        $groupCount   = TransactionJournal::query()->where('transaction_group_id', $journal['transaction_group_id'])->count();
         if ($groupCount > 1) {
             Log::error(sprintf('Group #%d has more than one transaction in it, cannot convert to transfer.', $journal['transaction_group_id']));
             event(new RuleActionFailedOnArray($this->action, $journal, trans('rules.split_group')));
@@ -196,16 +196,12 @@ class ConvertToTransfer implements ActionInterface
         }
 
         // update source transaction:
-        DB::table('transactions')
-            ->where('transaction_journal_id', '=', $journal->id)
-            ->where('amount', '<', 0)
-            ->update(['account_id' => $opposing->id])
-        ;
+        DB::table('transactions')->where('transaction_journal_id', '=', $journal->id)->where('amount', '<', 0)->update(['account_id' => $opposing->id]);
 
         // change transaction type of journal:
         $newType     = TransactionType::whereType(TransactionTypeEnum::TRANSFER->value)->first();
 
-        DB::table('transaction_journals')->where('id', '=', $journal->id)->update(['transaction_type_id' => $newType->id, 'bill_id'             => null]);
+        DB::table('transaction_journals')->where('id', '=', $journal->id)->update(['transaction_type_id' => $newType->id, 'bill_id' => null]);
 
         Log::debug('Converted deposit to transfer.');
 
@@ -236,10 +232,10 @@ class ConvertToTransfer implements ActionInterface
         }
 
         /** @var Transaction $sourceTransaction */
-        $sourceTransaction           = Transaction::where('transaction_journal_id', '=', $journal->id)->where('amount', '<', 0)->first();
+        $sourceTransaction           = Transaction::query()->where('transaction_journal_id', '=', $journal->id)->where('amount', '<', 0)->first();
 
         /** @var Transaction $destTransaction */
-        $destTransaction             = Transaction::where('transaction_journal_id', '=', $journal->id)->where('amount', '>', 0)->first();
+        $destTransaction             = Transaction::query()->where('transaction_journal_id', '=', $journal->id)->where('amount', '>', 0)->first();
         // update destination transaction:
         $destTransaction->account_id = $opposing->id;
         $destTransaction->save();
@@ -287,7 +283,7 @@ class ConvertToTransfer implements ActionInterface
         // change transaction type of journal:
         $newType                     = TransactionType::whereType(TransactionTypeEnum::TRANSFER->value)->first();
 
-        DB::table('transaction_journals')->where('id', '=', $journal->id)->update(['transaction_type_id' => $newType->id, 'bill_id'             => null]);
+        DB::table('transaction_journals')->where('id', '=', $journal->id)->update(['transaction_type_id' => $newType->id, 'bill_id' => null]);
 
         Log::debug('Converted withdrawal to transfer.');
 
@@ -299,13 +295,19 @@ class ConvertToTransfer implements ActionInterface
      */
     private function getDestinationAccount(TransactionJournal $journal): Account
     {
-        /** @var null|Transaction $destAccount */
-        $destAccount = $journal->transactions()->where('amount', '>', 0)->first();
-        if (null === $destAccount) {
+        /** @var null|Transaction $destTransaction */
+        $destTransaction = $journal->transactions()->where('amount', '>', 0)->first();
+        if (null === $destTransaction) {
             throw new FireflyException(sprintf('Cannot find destination transaction for journal #%d', $journal->id));
         }
 
-        return $destAccount->account;
+        /** @var null|Account $res */
+        $res             = $destTransaction->account;
+        if (null === $res) {
+            throw new FireflyException('Account is unexpectedly NULL.');
+        }
+
+        return $res;
     }
 
     private function getDestinationType(int $journalId): string
@@ -332,7 +334,13 @@ class ConvertToTransfer implements ActionInterface
             throw new FireflyException(sprintf('Cannot find source transaction for journal #%d', $journal->id));
         }
 
-        return $sourceTransaction->account;
+        /** @var null|Account $res */
+        $res               = $sourceTransaction->account;
+        if (null === $res) {
+            throw new FireflyException('Account is unexpectedly NULL.');
+        }
+
+        return $res;
     }
 
     private function getSourceType(int $journalId): string

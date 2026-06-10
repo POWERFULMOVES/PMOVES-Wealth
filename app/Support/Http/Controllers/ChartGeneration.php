@@ -32,6 +32,7 @@ use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Support\CacheProperties;
 use FireflyIII\Support\Facades\Amount;
 use FireflyIII\Support\Facades\Steam;
+use FireflyIII\Support\Http\Api\ExchangeRateConverter;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -60,6 +61,7 @@ trait ChartGeneration
         }
         Log::debug('Regenerate chart.account.account-balance-chart from scratch.');
         $locale           = Steam::getLocale();
+        $converter        = new ExchangeRateConverter();
 
         /** @var GeneratorInterface $generator */
         $generator        = app(GeneratorInterface::class);
@@ -76,11 +78,7 @@ trait ChartGeneration
         foreach ($accounts as $account) {
             Log::debug(sprintf('Now at account #%d ("%s)', $account->id, $account->name));
             $currency     = $accountRepos->getAccountCurrency($account) ?? $primary;
-            $usePrimary   = $convertToPrimary && $primary->id !== $currency->id;
-            $field        = $convertToPrimary ? 'pc_balance' : 'balance';
-            $currency     = $usePrimary ? $primary : $currency;
-            Log::debug(sprintf('Will use field %s', $field));
-            $currentSet   = ['label'           => $account->name, 'currency_symbol' => $currency->symbol, 'entries'         => []];
+            $currentSet   = ['label' => $account->name, 'currency_symbol' => $currency->symbol, 'entries' => []];
 
             $currentStart = clone $start;
             $range        = Steam::finalAccountBalanceInRange($account, clone $start, clone $end, $this->convertToPrimary);
@@ -90,9 +88,16 @@ trait ChartGeneration
                 $format                        = $currentStart->format('Y-m-d');
                 $label                         = trim($currentStart->isoFormat((string) trans('config.month_and_day_js', [], $locale)));
                 $balance                       = $range[$format] ?? $previous;
+                $converted                     = $balance['balance'] ?? '0';
+
+                // convert balance if necessary:
+                if ($convertToPrimary) {
+                    $converted = $converter->convert($currency, $primary, $currentStart, $balance['balance']);
+                }
+
                 $previous                      = $balance;
                 $currentStart->addDay();
-                $currentSet['entries'][$label] = $balance[$field] ?? '0';
+                $currentSet['entries'][$label] = $converted;
             }
             $chartData[]  = $currentSet;
         }

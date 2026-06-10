@@ -40,13 +40,12 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Redirector;
 use Illuminate\View\View;
 
 /**
  * Class CreateController
  */
-class CreateController extends Controller
+final class CreateController extends Controller
 {
     use ModelInformation;
     use RuleManagement;
@@ -80,7 +79,7 @@ class CreateController extends Controller
     public function create(Request $request, ?RuleGroup $ruleGroup = null): Factory|\Illuminate\Contracts\View\View
     {
         $this->createDefaultRuleGroup();
-        $preFilled    = ['strict'   => true];
+        $preFilled    = ['strict' => true];
         $oldTriggers  = [];
         $oldActions   = [];
 
@@ -95,13 +94,13 @@ class CreateController extends Controller
             if (count($words) > 0) {
                 session()->flash('warning', trans('firefly.rule_from_search_words', ['string' => implode('', $words)]));
                 foreach ($words as $word) {
-                    $operators[] = ['type'  => 'description_contains', 'value' => $word];
+                    $operators[] = ['type' => 'description_contains', 'value' => $word];
                 }
             }
             if (count($excludedWords) > 0) {
                 session()->flash('warning', trans('firefly.rule_from_search_words', ['string' => implode('', $excludedWords)]));
                 foreach ($excludedWords as $excludedWord) {
-                    $operators[] = ['type'  => '-description_contains', 'value' => $excludedWord];
+                    $operators[] = ['type' => '-description_contains', 'value' => $excludedWord];
                 }
             }
             $oldTriggers   = $this->parseFromOperators($operators);
@@ -159,7 +158,7 @@ class CreateController extends Controller
         $this->createDefaultRuleGroup();
         $preFilled    = [
             'strict'      => true,
-            'title'       => (string) trans('firefly.new_rule_for_bill_title', ['name'       => $bill->name]),
+            'title'       => (string) trans('firefly.new_rule_for_bill_title', ['name' => $bill->name]),
             'description' => (string) trans('firefly.new_rule_for_bill_description', ['name' => $bill->name]),
         ];
 
@@ -221,7 +220,7 @@ class CreateController extends Controller
         // collect pre-filled information:
         $preFilled    = [
             'strict'      => true,
-            'title'       => (string) trans('firefly.new_rule_for_journal_title', ['description'       => $journal->description]),
+            'title'       => (string) trans('firefly.new_rule_for_journal_title', ['description' => $journal->description]),
             'description' => (string) trans('firefly.new_rule_for_journal_description', ['description' => $journal->description]),
         ];
 
@@ -268,7 +267,7 @@ class CreateController extends Controller
     /**
      * Store the new rule.
      *
-     * @return Redirector|RedirectResponse
+     * @return RedirectResponse
      */
     public function store(RuleFormRequest $request)
     {

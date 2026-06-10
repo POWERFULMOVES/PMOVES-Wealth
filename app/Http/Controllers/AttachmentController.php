@@ -32,13 +32,12 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as LaravelResponse;
-use Illuminate\Routing\Redirector;
 use Illuminate\View\View;
 
 /**
  * Class AttachmentController.
  */
-class AttachmentController extends Controller
+final class AttachmentController extends Controller
 {
     private AttachmentRepositoryInterface $repository;
 
@@ -71,13 +70,13 @@ class AttachmentController extends Controller
         // put previous url in session
         $this->rememberPreviousUrl('attachments.delete.url');
 
-        return view('attachments.delete', ['attachment' => $attachment, 'subTitle'   => $subTitle]);
+        return view('attachments.delete', ['attachment' => $attachment, 'subTitle' => $subTitle]);
     }
 
     /**
      * Destroy attachment.
      */
-    public function destroy(Request $request, Attachment $attachment): Redirector|RedirectResponse
+    public function destroy(Request $request, Attachment $attachment): RedirectResponse
     {
         $name = $attachment->filename;
 
@@ -131,7 +130,7 @@ class AttachmentController extends Controller
     public function edit(Request $request, Attachment $attachment): Factory|\Illuminate\Contracts\View\View
     {
         $subTitleIcon = 'fa-pencil';
-        $subTitle     = (string) trans('firefly.edit_attachment', ['name'     => $attachment->filename]);
+        $subTitle     = (string) trans('firefly.edit_attachment', ['name' => $attachment->filename]);
 
         // put previous url in session if not redirect from store (not "return_to_edit").
         if (true !== session('attachments.edit.fromUpdate')) {
@@ -141,7 +140,7 @@ class AttachmentController extends Controller
         $preFilled    = ['notes' => $this->repository->getNoteText($attachment)];
         $request->session()->flash('preFilled', $preFilled);
 
-        return view('attachments.edit', ['attachment'   => $attachment, 'subTitleIcon' => $subTitleIcon, 'subTitle'     => $subTitle]);
+        return view('attachments.edit', ['attachment' => $attachment, 'subTitleIcon' => $subTitleIcon, 'subTitle' => $subTitle]);
     }
 
     /**

@@ -38,7 +38,7 @@ use Illuminate\Http\JsonResponse;
 /**
  * Class BudgetController
  */
-class BudgetController extends Controller
+final class BudgetController extends Controller
 {
     use DateCalculation;
 
@@ -60,6 +60,7 @@ class BudgetController extends Controller
             $this->abRepository = app(AvailableBudgetRepositoryInterface::class);
             $this->blRepository = app(BudgetLimitRepositoryInterface::class);
             $this->repository->cleanupBudgets();
+            $this->abRepository->cleanup();
 
             return $next($request);
         });

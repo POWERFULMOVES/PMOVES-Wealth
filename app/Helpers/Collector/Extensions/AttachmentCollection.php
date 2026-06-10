@@ -273,8 +273,9 @@ trait AttachmentCollection
                     /** @var null|Attachment $object */
                     $object = auth()->user()->attachments()->find($attachment['id']);
                     $notes  = (string) $object?->notes()->first()?->text;
-
-                    return '' !== $notes && $notes === $value;
+                    if ('' !== $notes && $notes === $value) {
+                        return true;
+                    }
                 }
             }
 
@@ -297,8 +298,9 @@ trait AttachmentCollection
                     /** @var null|Attachment $object */
                     $object = auth()->user()->attachments()->find($attachment['id']);
                     $notes  = (string) $object?->notes()->first()?->text;
-
-                    return '' !== $notes && $notes !== $value;
+                    if ('' !== $notes && $notes !== $value) {
+                        return true;
+                    }
                 }
             }
 
@@ -321,8 +323,9 @@ trait AttachmentCollection
                     /** @var null|Attachment $object */
                     $object = auth()->user()->attachments()->find($attachment['id']);
                     $notes  = (string) $object?->notes()->first()?->text;
-
-                    return '' !== $notes && str_contains(strtolower($notes), strtolower($value));
+                    if ('' !== $notes && str_contains(strtolower($notes), strtolower($value))) {
+                        return true;
+                    }
                 }
             }
 
@@ -345,8 +348,9 @@ trait AttachmentCollection
                     /** @var null|Attachment $object */
                     $object = auth()->user()->attachments()->find($attachment['id']);
                     $notes  = (string) $object?->notes()->first()?->text;
-
-                    return '' !== $notes && !str_contains(strtolower($notes), strtolower($value));
+                    if ('' !== $notes && !str_contains(strtolower($notes), strtolower($value))) {
+                        return true;
+                    }
                 }
             }
 
@@ -370,7 +374,9 @@ trait AttachmentCollection
                     $object = auth()->user()->attachments()->find($attachment['id']);
                     $notes  = (string) $object?->notes()->first()?->text;
 
-                    return '' !== $notes && !str_ends_with(strtolower($notes), strtolower($value));
+                    if ('' !== $notes && !str_ends_with(strtolower($notes), strtolower($value))) {
+                        return true;
+                    }
                 }
             }
 
@@ -393,8 +399,9 @@ trait AttachmentCollection
                     /** @var null|Attachment $object */
                     $object = auth()->user()->attachments()->find($attachment['id']);
                     $notes  = (string) $object?->notes()->first()?->text;
-
-                    return '' !== $notes && !str_starts_with(strtolower($notes), strtolower($value));
+                    if ('' !== $notes && !str_starts_with(strtolower($notes), strtolower($value))) {
+                        return true;
+                    }
                 }
             }
 
@@ -417,8 +424,9 @@ trait AttachmentCollection
                     /** @var null|Attachment $object */
                     $object = auth()->user()->attachments()->find($attachment['id']);
                     $notes  = (string) $object?->notes()->first()?->text;
-
-                    return '' !== $notes && str_ends_with(strtolower($notes), strtolower($value));
+                    if ('' !== $notes && str_ends_with(strtolower($notes), strtolower($value))) {
+                        return true;
+                    }
                 }
             }
 
@@ -441,8 +449,9 @@ trait AttachmentCollection
                     /** @var null|Attachment $object */
                     $object = auth()->user()->attachments()->find($attachment['id']);
                     $notes  = (string) $object?->notes()->first()?->text;
-
-                    return '' !== $notes && str_starts_with(strtolower($notes), strtolower($value));
+                    if ('' !== $notes && str_starts_with(strtolower($notes), strtolower($value))) {
+                        return true;
+                    }
                 }
             }
 
@@ -474,7 +483,7 @@ trait AttachmentCollection
         Log::debug('Add filter on no attachments.');
         $this->joinAttachmentTables();
 
-        $this->query->where(static function (EloquentBuilder $q1): void { // @phpstan-ignore-line
+        $this->query->where(static function (EloquentBuilder $q1): void {
             $q1->whereNull('attachments.attachable_id')->orWhere(static function (EloquentBuilder $q2): void {
                 $q2->whereNotNull('attachments.attachable_id')->whereNotNull('attachments.deleted_at');
 
@@ -508,7 +517,7 @@ trait AttachmentCollection
             $this->hasJoinedAttTables = true;
             $this->query
                 ->leftJoin('attachments', 'attachments.attachable_id', '=', 'transaction_journals.id')
-                ->where(static function (EloquentBuilder $q1): void { // @phpstan-ignore-line
+                ->where(static function (EloquentBuilder $q1): void {
                     $q1->where('attachments.attachable_type', TransactionJournal::class);
                     // $q1->where('attachments.uploaded', true);
                     // $q1->whereNull('attachments.deleted_at');

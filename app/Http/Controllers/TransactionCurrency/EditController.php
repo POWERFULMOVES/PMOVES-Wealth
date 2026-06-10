@@ -39,7 +39,7 @@ use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
-class EditController extends Controller
+final class EditController extends Controller
 {
     protected CurrencyRepositoryInterface $repository;
     protected UserRepositoryInterface $userRepository;
@@ -64,7 +64,7 @@ class EditController extends Controller
     /**
      * Edit a currency.
      *
-     * @return Factory|Redirector|RedirectResponse|View
+     * @return Factory|RedirectResponse|View
      */
     public function edit(Request $request, TransactionCurrency $currency): Factory|\Illuminate\Contracts\View\View|Redirector|RedirectResponse
     {
@@ -78,20 +78,16 @@ class EditController extends Controller
         }
 
         $subTitleIcon     = 'fa-pencil';
-        $subTitle         = (string) trans('breadcrumbs.edit_currency', ['name'         => $currency->name]);
+        $subTitle         = (string) trans('breadcrumbs.edit_currency', ['name' => $currency->name]);
         $currency->symbol = htmlentities($currency->symbol);
 
         // is currently enabled (for this user?)
-        $userCurrencies   = $this->repository
-            ->get()
-            ->pluck('id')
-            ->toArray()
-        ;
+        $userCurrencies   = $this->repository->get()->pluck('id')->toArray();
         $enabled          = in_array($currency->id, $userCurrencies, true);
 
         // code to handle active-checkboxes
         $hasOldInput      = null !== $request->old('_token');
-        $preFilled        = ['enabled'   => $hasOldInput ? (bool) $request->old('enabled') : $enabled];
+        $preFilled        = ['enabled' => $hasOldInput ? (bool) $request->old('enabled') : $enabled];
 
         $request->session()->flash('preFilled', $preFilled);
         Log::channel('audit')->info('Edit currency.', $currency->toArray());
@@ -102,7 +98,7 @@ class EditController extends Controller
         }
         $request->session()->forget('currencies.edit.fromUpdate');
 
-        return view('currencies.edit', ['currency'     => $currency, 'subTitle'     => $subTitle, 'subTitleIcon' => $subTitleIcon]);
+        return view('currencies.edit', ['currency' => $currency, 'subTitle' => $subTitle, 'subTitleIcon' => $subTitleIcon]);
     }
 
     /**
@@ -110,7 +106,7 @@ class EditController extends Controller
      *
      * @throws FireflyException
      */
-    public function update(CurrencyFormRequest $request, TransactionCurrency $currency): Redirector|RedirectResponse
+    public function update(CurrencyFormRequest $request, TransactionCurrency $currency): RedirectResponse
     {
         /** @var User $user */
         $user     = auth()->user();

@@ -45,7 +45,7 @@ use function Safe\parse_url;
 /**
  * Class EditController
  */
-class EditController extends Controller
+final class EditController extends Controller
 {
     private JournalRepositoryInterface $repository;
 
@@ -68,7 +68,7 @@ class EditController extends Controller
     }
 
     /**
-     * @return Factory|Redirector|RedirectResponse|View
+     * @return Factory|RedirectResponse|View
      *
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
@@ -91,7 +91,7 @@ class EditController extends Controller
         $title                      = $transactionGroup->transactionJournals()->count() > 1
             ? $transactionGroup->title
             : $transactionGroup->transactionJournals()->first()->description;
-        $subTitle                   = (string) trans('firefly.edit_transaction_title', ['description'             => $title]);
+        $subTitle                   = (string) trans('firefly.edit_transaction_title', ['description' => $title]);
         $subTitleIcon               = 'fa-plus';
         $cash                       = $repository->getCashAccount();
         $previousUrl                = $this->rememberPreviousUrl('transactions.edit.url');
@@ -115,7 +115,7 @@ class EditController extends Controller
         ];
         $optionalFields['external_url'] ??= false;
         $optionalFields['location']     ??= false;
-        $optionalFields['location'] = $optionalFields['location']
+        $optionalFields['location'] = true === $optionalFields['location']
         && true === FireflyConfig::get('enable_external_map', config('firefly.enable_external_map'))->data;
 
         // map info voor v2:

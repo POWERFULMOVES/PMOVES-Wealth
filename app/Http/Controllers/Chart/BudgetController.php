@@ -49,7 +49,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Class BudgetController.
  */
-class BudgetController extends Controller
+final class BudgetController extends Controller
 {
     use AugumentData;
     use DateCalculation;
@@ -257,7 +257,7 @@ class BudgetController extends Controller
                 $amount = $journal['foreign_amount'];
             }
 
-            $result[$key] ??= ['amount'          => '0', 'currency_symbol' => $symbol, 'currency_code'   => $code, 'currency_name'   => $name];
+            $result[$key] ??= ['amount' => '0', 'currency_symbol' => $symbol, 'currency_code' => $code, 'currency_name' => $name];
             $result[$key]['amount'] = bcadd((string) $amount, $result[$key]['amount']);
         }
 
@@ -341,7 +341,7 @@ class BudgetController extends Controller
                 $amount = $journal['foreign_amount'];
             }
 
-            $result[$key] ??= ['amount'          => '0', 'currency_symbol' => $symbol, 'currency_code'   => $code, 'currency_name'   => $name];
+            $result[$key] ??= ['amount' => '0', 'currency_symbol' => $symbol, 'currency_code' => $code, 'currency_name' => $name];
             $result[$key]['amount'] = bcadd((string) $amount, $result[$key]['amount']);
         }
 
@@ -427,7 +427,7 @@ class BudgetController extends Controller
                 $amount = $journal['foreign_amount'];
             }
 
-            $result[$key] ??= ['amount'          => '0', 'currency_symbol' => $symbol, 'currency_code'   => $code, 'currency_name'   => $name];
+            $result[$key] ??= ['amount' => '0', 'currency_symbol' => $symbol, 'currency_code' => $code, 'currency_name' => $name];
             $result[$key]['amount'] = bcadd((string) $amount, $result[$key]['amount']);
         }
 
@@ -505,14 +505,14 @@ class BudgetController extends Controller
         $preferredRange = Navigation::preferredRangeFormat($start, $end);
         $chartData      = [
             [
-                'label'           => (string) trans('firefly.box_spent_in_currency', ['currency'           => $currency->name]),
+                'label'           => (string) trans('firefly.box_spent_in_currency', ['currency' => $currency->name]),
                 'type'            => 'bar',
                 'entries'         => [],
                 'currency_symbol' => $currency->symbol,
                 'currency_code'   => $currency->code,
             ],
             [
-                'label'           => (string) trans('firefly.box_budgeted_in_currency', ['currency'           => $currency->name]),
+                'label'           => (string) trans('firefly.box_budgeted_in_currency', ['currency' => $currency->name]),
                 'type'            => 'bar',
                 'currency_symbol' => $currency->symbol,
                 'currency_code'   => $currency->code,

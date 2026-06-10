@@ -43,8 +43,8 @@ use FireflyIII\User;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
@@ -62,7 +62,7 @@ use const PHP_SAPI;
 /**
  * Class DebugController
  */
-class DebugController extends Controller
+final class DebugController extends Controller
 {
     use GetConfigurationData;
 
@@ -104,17 +104,17 @@ class DebugController extends Controller
      *
      * @throws FireflyException
      */
-    public function flush(Request $request): Redirector|RedirectResponse
+    public function flush(Request $request): RedirectResponse
     {
         Preferences::mark();
         $request->session()->forget(['start', 'end', '_previous', 'viewRange', 'range', 'is_custom_range', 'temp-mfa-secret', 'temp-mfa-codes']);
 
-        Artisan::call('cache:clear');
+        Cache::clear();
         Artisan::call('config:clear');
         Artisan::call('route:clear');
         Artisan::call('view:clear');
 
-        PeriodStatistic::where('id', '>', 0)->delete();
+        PeriodStatistic::query()->where('id', '>', 0)->delete();
 
         // also do some recalculations.
         Artisan::call('correction:recalculates-liabilities');
@@ -149,7 +149,7 @@ class DebugController extends Controller
         // get latest log file:
         $logger     = Log::driver();
         // PHPstan doesn't recognize the method because of its polymorphic nature.
-        $handlers   = $logger->getHandlers(); // @phpstan-ignore-line
+        $handlers   = $logger->getHandlers();
         $logContent = '';
         foreach ($handlers as $handler) {
             if ($handler instanceof RotatingFileHandler) {
@@ -161,10 +161,10 @@ class DebugController extends Controller
         }
         if ('' !== $logContent) {
             // last few lines
-            $logContent = 'Truncated from this point <----|'.substr($logContent, -16384);
+            $logContent = 'Truncated from this point <----|'.substr($logContent, -16_384);
         }
 
-        return view('debug', ['table'      => $table, 'now'        => $now, 'logContent' => $logContent]);
+        return view('debug', ['table' => $table, 'now' => $now, 'logContent' => $logContent]);
     }
 
     public function routes(Request $request): never
@@ -195,9 +195,7 @@ class DebugController extends Controller
                 }
                 // no name route:
                 if (null === $route->getName()) {
-                    var_dump($route);
-
-                    exit;
+                    exit('Route name is NULL, cannot deal with this.');
                 }
 
                 echo substr($route->uri(), 3);
@@ -236,9 +234,7 @@ class DebugController extends Controller
             }
             // no name route:
             if (null === $route->getName()) {
-                var_dump($route);
-
-                exit;
+                exit('Route name is NULL, cannot deal with this.');
             }
             if (!str_contains($route->uri(), '{')) {
                 $return[$route->getName()] = route($route->getName());
@@ -256,7 +252,8 @@ class DebugController extends Controller
         echo '<h1>Routes</h1>';
         echo sprintf('<h2>%s</h2>', $count);
         foreach ($return as $name => $path) {
-            echo sprintf('<a href="%1$s">%2$s</a><br>', $path, $name).PHP_EOL;
+            echo sprintf('<a href="%1$s">%2$s</a><br>', $path, $name);
+            echo PHP_EOL;
             ++$count;
             if (0 === ($count % 10)) {
                 echo '<hr>';
@@ -270,7 +267,7 @@ class DebugController extends Controller
     /**
      * Flash all types of messages.
      */
-    public function testFlash(Request $request): Redirector|RedirectResponse
+    public function testFlash(Request $request): RedirectResponse
     {
         $request->session()->flash('success', 'This is a success message.');
         $request->session()->flash('info', 'This is an info message.');
@@ -288,7 +285,7 @@ class DebugController extends Controller
         $app    = $this->getAppInfo();
         $user   = $this->getUserInfo();
 
-        return (string) view('partials.debug-table', ['system' => $system, 'docker' => $docker, 'app'    => $app, 'user'   => $user]);
+        return (string) view('partials.debug-table', ['system' => $system, 'docker' => $docker, 'app' => $app, 'user' => $user]);
     }
 
     private function getAppInfo(): array
@@ -302,12 +299,12 @@ class DebugController extends Controller
         if ($lastTime > 0) {
             $carbon         = Carbon::createFromTimestamp($lastTime);
             $lastCronjob    = $carbon->format('Y-m-d H:i:s');
-            $lastCronjobAgo = $carbon->locale('en')->diffForHumans(); // @phpstan-ignore-line
+            $lastCronjobAgo = $carbon->locale('en')->diffForHumans();
         }
 
         return [
-            'debug'              => var_export(config('app.debug'), true),
-            'audit_log_channel'  => envNonEmpty('AUDIT_LOG_CHANNEL', '(empty)'),
+            'debug'              => var_export(config('app.debug'), return: true),
+            'audit_log_channel'  => implode(', ', config('logging.channels.audit.channels')),
             'default_language'   => (string) config('firefly.default_language'),
             'default_locale'     => (string) config('firefly.default_locale'),
             'remote_header'      => 'remote_user_guard' === $userGuard ? config('auth.guard_header') : 'N/A',
@@ -326,11 +323,11 @@ class DebugController extends Controller
     private function getBuildInfo(): array
     {
         $return = [
-            'is_docker'       => env('IS_DOCKER', false), // @phpstan-ignore-line
+            'is_docker'       => config('firefly.is_docker'),
             'build'           => '(unknown)',
             'build_date'      => '(unknown)',
-            'base_build'      => '(unknown)',
-            'base_build_date' => '(unknown)',
+            'base_build'      => config('firefly.base_image_build'),
+            'base_build_date' => config('firefly.base_image_date'),
         ];
 
         try {
@@ -350,12 +347,6 @@ class DebugController extends Controller
         } catch (Exception $e) {
             Log::debug('Could not check build date, but thats ok.');
             Log::warning($e->getMessage());
-        }
-        if ('' !== (string) env('BASE_IMAGE_BUILD')) { // @phpstan-ignore-line
-            $return['base_build'] = env('BASE_IMAGE_BUILD'); // @phpstan-ignore-line
-        }
-        if ('' !== (string) env('BASE_IMAGE_DATE')) { // @phpstan-ignore-line
-            $return['base_build_date'] = env('BASE_IMAGE_DATE'); // @phpstan-ignore-line
         }
 
         return $return;

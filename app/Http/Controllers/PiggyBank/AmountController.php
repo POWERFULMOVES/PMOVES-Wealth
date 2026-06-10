@@ -40,7 +40,7 @@ use Illuminate\View\View;
 /**
  * Class AmountController
  */
-class AmountController extends Controller
+final class AmountController extends Controller
 {
     private PiggyBankRepositoryInterface $piggyRepos;
 
@@ -69,7 +69,7 @@ class AmountController extends Controller
     public function add(PiggyBank $piggyBank): Factory|\Illuminate\Contracts\View\View
     {
         /** @var Carbon $date */
-        $date       = session('end', today(config('app.timezone')));
+        $date       = now(config('app.timezone'));
         $accounts   = [];
         $total      = '0';
         $totalSaved = $this->piggyRepos->getCurrentAmount($piggyBank);
@@ -98,7 +98,7 @@ class AmountController extends Controller
         }
         $total      = (float) $total; // intentional float.
 
-        return view('piggy-banks.add', ['piggyBank' => $piggyBank, 'accounts'  => $accounts, 'total'     => $total]);
+        return view('piggy-banks.add', ['piggyBank' => $piggyBank, 'accounts' => $accounts, 'total' => $total]);
     }
 
     /**
@@ -109,7 +109,7 @@ class AmountController extends Controller
     public function addMobile(PiggyBank $piggyBank): Factory|\Illuminate\Contracts\View\View
     {
         /** @var Carbon $date */
-        $date       = session('end', today(config('app.timezone')));
+        $date       = now(config('app.timezone'));
         $accounts   = [];
         $total      = '0';
         $totalSaved = $this->piggyRepos->getCurrentAmount($piggyBank);
@@ -127,7 +127,7 @@ class AmountController extends Controller
             $total         = bcadd($total, $leftOnAccount);
         }
 
-        return view('piggy-banks.add-mobile', ['piggyBank' => $piggyBank, 'total'     => $total, 'accounts'  => $accounts]);
+        return view('piggy-banks.add-mobile', ['piggyBank' => $piggyBank, 'total' => $total, 'accounts' => $accounts]);
     }
 
     /**
@@ -135,7 +135,7 @@ class AmountController extends Controller
      */
     public function postAdd(Request $request, PiggyBank $piggyBank): RedirectResponse
     {
-        $data    = $request->all();
+        $data    = $request->only(['amount']);
         $amounts = $data['amount'] ?? [];
         $total   = '0';
         Log::debug('Start with loop.');
@@ -143,7 +143,7 @@ class AmountController extends Controller
         /** @var Account $account */
         foreach ($piggyBank->accounts as $account) {
             $amount        = (string) ($amounts[$account->id] ?? '0');
-            if ('' === $amount || 0 === bccomp($amount, '0')) {
+            if ('' === $amount || !is_numeric($amount) || 0 === bccomp($amount, '0')) {
                 continue;
             }
             if (-1 === bccomp($amount, '0')) {
@@ -247,10 +247,10 @@ class AmountController extends Controller
     {
         $accounts = [];
         foreach ($piggyBank->accounts as $account) {
-            $accounts[] = ['account'      => $account, 'saved_so_far' => $this->piggyRepos->getCurrentAmount($piggyBank, $account)];
+            $accounts[] = ['account' => $account, 'saved_so_far' => $this->piggyRepos->getCurrentAmount($piggyBank, $account)];
         }
 
-        return view('piggy-banks.remove', ['piggyBank' => $piggyBank, 'accounts'  => $accounts]);
+        return view('piggy-banks.remove', ['piggyBank' => $piggyBank, 'accounts' => $accounts]);
     }
 
     /**
@@ -262,9 +262,9 @@ class AmountController extends Controller
     {
         $accounts = [];
         foreach ($piggyBank->accounts as $account) {
-            $accounts[] = ['account'      => $account, 'saved_so_far' => $this->piggyRepos->getCurrentAmount($piggyBank, $account)];
+            $accounts[] = ['account' => $account, 'saved_so_far' => $this->piggyRepos->getCurrentAmount($piggyBank, $account)];
         }
 
-        return view('piggy-banks.remove-mobile', ['piggyBank' => $piggyBank, 'accounts'  => $accounts]);
+        return view('piggy-banks.remove-mobile', ['piggyBank' => $piggyBank, 'accounts' => $accounts]);
     }
 }

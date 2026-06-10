@@ -25,6 +25,7 @@ namespace FireflyIII\Generator\Chart\Basic;
 
 use FireflyIII\Support\ChartColour;
 use FireflyIII\Support\Facades\Steam;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class ChartJsGenerator.
@@ -38,7 +39,7 @@ class ChartJsGenerator implements GeneratorInterface
      */
     public function multiCurrencyPieChart(array $data): array
     {
-        $chartData = ['datasets' => [0 => []], 'labels'   => []];
+        $chartData = ['datasets' => [0 => []], 'labels' => []];
 
         $amounts   = array_column($data, 'amount');
         $next      = next($amounts);
@@ -92,14 +93,21 @@ class ChartJsGenerator implements GeneratorInterface
      *
      *  // it's five.
      */
-    public function multiSet(array $data): array
+    public function multiSet(array $data, array $labels = []): array
     {
         reset($data);
         $first     = current($data);
         if (!is_array($first)) {
             return [];
         }
-        $labels    = is_array($first['entries']) ? array_keys($first['entries']) : [];
+        Log::debug('Now in multiSet()');
+        if (0 !== count($labels)) {
+            Log::debug('Labels are given: ', $labels);
+        }
+        if (0 === count($labels)) {
+            $labels = is_array($first['entries']) ? array_keys($first['entries']) : [];
+            Log::debug('Labels are generated: ', $labels);
+        }
 
         $chartData = [
             'count'    => count($data),
@@ -109,7 +117,7 @@ class ChartJsGenerator implements GeneratorInterface
         unset($first, $labels);
 
         foreach ($data as $set) {
-            $currentSet              = ['label' => $set['label'] ?? '(no label)', 'type'  => $set['type'] ?? 'line', 'data'  => array_values($set['entries'])];
+            $currentSet              = ['label' => $set['label'] ?? '(no label)', 'type' => $set['type'] ?? 'line', 'data' => array_values($set['entries'])];
             if (array_key_exists('yAxisID', $set)) {
                 $currentSet['yAxisID'] = $set['yAxisID'];
             }
@@ -135,7 +143,7 @@ class ChartJsGenerator implements GeneratorInterface
      */
     public function pieChart(array $data): array
     {
-        $chartData = ['datasets' => [0 => []], 'labels'   => []];
+        $chartData = ['datasets' => [0 => []], 'labels' => []];
 
         // sort by value, keep keys.
         // different sort when values are positive and when they're negative.
@@ -170,7 +178,7 @@ class ChartJsGenerator implements GeneratorInterface
         return [
             'count'    => 1,
             'labels'   => array_keys($data), // take ALL labels from the first set.
-            'datasets' => [['label' => $setLabel, 'data'  => array_values($data)]],
+            'datasets' => [['label' => $setLabel, 'data' => array_values($data)]],
         ];
     }
 }

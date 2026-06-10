@@ -26,6 +26,7 @@ namespace FireflyIII\Http\Controllers\Transaction;
 use Carbon\Carbon;
 use FireflyIII\Enums\AccountTypeEnum;
 use FireflyIII\Enums\TransactionTypeEnum;
+use FireflyIII\Events\Model\TransactionGroup\DestroyedSingleTransactionGroup;
 use FireflyIII\Events\Model\TransactionGroup\TransactionGroupEventFlags;
 use FireflyIII\Events\Model\TransactionGroup\TransactionGroupEventObjects;
 use FireflyIII\Events\Model\TransactionGroup\UpdatedSingleTransactionGroup;
@@ -41,9 +42,7 @@ use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
 use FireflyIII\Services\Internal\Update\JournalUpdateService;
 use FireflyIII\Support\Facades\Preferences;
 use FireflyIII\Support\Facades\Steam;
-use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View as IlluminateView;
 use InvalidArgumentException;
@@ -51,7 +50,7 @@ use InvalidArgumentException;
 /**
  * Class MassController.
  */
-class MassController extends Controller
+final class MassController extends Controller
 {
     private JournalRepositoryInterface $repository;
 
@@ -84,16 +83,14 @@ class MassController extends Controller
         return view('transactions.mass.delete', ['journals' => $journals, 'subTitle' => $subTitle]);
     }
 
-    /**
-     * Do the mass delete.
-     *
-     * @return Application|Redirector|RedirectResponse
-     */
-    public function destroy(MassDeleteJournalRequest $request): Redirector|RedirectResponse
+    public function destroy(MassDeleteJournalRequest $request): RedirectResponse
     {
         Log::debug(sprintf('Now in %s', __METHOD__));
-        $ids   = $request->get('confirm_mass_delete');
-        $count = 0;
+        $ids     = $request->input('confirm_mass_delete');
+        $count   = 0;
+
+        $objects = new TransactionGroupEventObjects();
+
         if (is_array($ids)) {
             Log::debug('Array of IDs', $ids);
 
@@ -104,7 +101,9 @@ class MassController extends Controller
                 /** @var null|TransactionJournal $journal */
                 $journal = $this->repository->find((int) $journalId);
                 if (null !== $journal && (int) $journalId === $journal->id) {
+                    $objects->appendFromTransactionGroup($journal->transactionGroup);
                     $this->repository->destroyJournal($journal);
+
                     ++$count;
                     Log::debug(sprintf('Deleted transaction journal #%d', $journalId));
 
@@ -115,6 +114,11 @@ class MassController extends Controller
         }
         Preferences::mark();
         session()->flash('success', trans_choice('firefly.mass_deleted_transactions_success', $count));
+
+        // trigger just after destruction
+        $flags   = new TransactionGroupEventFlags();
+        event(new DestroyedSingleTransactionGroup($flags, $objects));
+        event(new WebhookMessagesRequestSending());
 
         // redirect to previous URL:
         return redirect($this->getPreviousUrl('transactions.mass-delete.url'));
@@ -164,9 +168,9 @@ class MassController extends Controller
      *
      * @throws FireflyException
      */
-    public function update(MassEditJournalRequest $request): Redirector|RedirectResponse
+    public function update(MassEditJournalRequest $request): RedirectResponse
     {
-        $journalIds = $request->get('journals');
+        $journalIds = $request->input('journals');
         if (!is_array($journalIds)) {
             // TODO this is a weird error, should be caught.
             throw new FireflyException('This is not an array.');
@@ -180,8 +184,8 @@ class MassController extends Controller
             try {
                 $this->updateJournal($integer, $request);
                 ++$count;
-            } catch (FireflyException) {
-                // @ignoreException
+            } catch (FireflyException $e) {
+                Log::debug(sprintf('Could not update journal #%d: %s', $integer, $e->getMessage()));
             }
         }
 
@@ -246,6 +250,8 @@ class MassController extends Controller
     private function updateJournal(int $journalId, MassEditJournalRequest $request): void
     {
         $journal = $this->repository->find($journalId);
+        $objects = TransactionGroupEventObjects::collectFromTransactionGroup($journal->transactionGroup);
+
         if (!$journal instanceof TransactionJournal) {
             throw new FireflyException(sprintf('Trying to edit non-existent or deleted journal #%d', $journalId));
         }
@@ -270,8 +276,9 @@ class MassController extends Controller
         // call service to update.
         $service->setData($data);
         $service->update();
+        $updated = $service->getTransactionJournal();
+        $objects->appendFromTransactionGroup($updated->transactionGroup);
         $flags   = new TransactionGroupEventFlags();
-        $objects = TransactionGroupEventObjects::collectFromTransactionGroup($journal->transactionGroup);
         event(new UpdatedSingleTransactionGroup($flags, $objects));
         event(new WebhookMessagesRequestSending());
     }

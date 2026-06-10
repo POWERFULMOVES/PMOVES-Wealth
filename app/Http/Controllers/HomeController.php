@@ -43,7 +43,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Class HomeController.
  */
-class HomeController extends Controller
+final class HomeController extends Controller
 {
     /**
      * HomeController constructor.
@@ -91,7 +91,7 @@ class HomeController extends Controller
         $label         = $request->get('label');
         $isCustomRange = false;
 
-        Log::debug('dateRange: Received dateRange', ['start' => $stringStart, 'end'   => $stringEnd, 'label' => $request->get('label')]);
+        Log::debug('dateRange: Received dateRange', ['start' => $stringStart, 'end' => $stringEnd, 'label' => $request->get('label')]);
         // check if the label is "everything" or "Custom range" which will betray
         // a possible problem with the budgets.
         if ($label === (string) trans('firefly.everything') || $label === (string) trans('firefly.customRange')) {
@@ -106,7 +106,7 @@ class HomeController extends Controller
         }
 
         $request->session()->put('is_custom_range', $isCustomRange);
-        Log::debug(sprintf('Set is_custom_range to %s', var_export($isCustomRange, true)));
+        Log::debug(sprintf('Set is_custom_range to %s', var_export($isCustomRange, return: true)));
         $request->session()->put('start', $start);
         Log::debug(sprintf('Set start to %s', $start->format('Y-m-d H:i:s')));
         $request->session()->put('end', $end);
@@ -173,7 +173,7 @@ class HomeController extends Controller
             $collector      = app(GroupCollectorInterface::class);
             $collector->setAccounts(new Collection()->push($account))->withAccountInformation()->setRange($start, $end)->setLimit(10)->setPage(1);
             $set            = $collector->getExtractedJournals();
-            $transactions[] = ['transactions' => $set, 'account'      => $account];
+            $transactions[] = ['transactions' => $set, 'account' => $account];
         }
 
         /** @var User $user */
@@ -204,6 +204,6 @@ class HomeController extends Controller
         $user      = auth()->user();
         event(new SystemRequestedVersionCheck($user));
 
-        return view('index', ['subTitle'  => $subTitle, 'start'     => $start, 'end'       => $end, 'pageTitle' => $pageTitle]);
+        return view('index', ['subTitle' => $subTitle, 'start' => $start, 'end' => $end, 'pageTitle' => $pageTitle]);
     }
 }

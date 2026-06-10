@@ -126,6 +126,7 @@ class BudgetLimitRepository implements BudgetLimitRepositoryInterface, UserGroup
         $user  = $budgetLimit->budget->user;
         $start = $budgetLimit->start_date->clone();
         $end   = $budgetLimit->end_date->clone();
+        Log::debug(sprintf('Send event for DestroyedBudgetLimit (limit #%d, budget #%d)', $budgetLimit->id, $budgetLimit->budget_id));
         event(new DestroyedBudgetLimit($user, $budgetLimit->budget, $start, $end, true));
         $budgetLimit->delete();
         event(new WebhookMessagesRequestSending());
@@ -334,7 +335,9 @@ class BudgetLimitRepository implements BudgetLimitRepositoryInterface, UserGroup
         $limit                          = new BudgetLimit();
         $limit->budget()->associate($budget);
         $limit->start_date              = $data['start_date']->format('Y-m-d');
+        $limit->start_date_tz           = $data['start_date']->format('e');
         $limit->end_date                = $data['end_date']->format('Y-m-d');
+        $limit->end_date_tz             = $data['end_date']->format('e');
         $limit->amount                  = $data['amount'];
         $limit->generated               = $data['generated'] ?? false;
         $limit->period                  = $data['period'] ?? '';
@@ -399,6 +402,7 @@ class BudgetLimitRepository implements BudgetLimitRepositoryInterface, UserGroup
         if (array_key_exists('notes', $data)) {
             $this->setNoteText($budgetLimit, (string) $data['notes']);
         }
+        Log::debug(sprintf('Updated budget limit with ID #%d', $budgetLimit->id));
         $generateMessages                     = $data['fire_webhooks'] ?? true;
         event(new UpdatedBudgetLimit($budgetLimit, $generateMessages));
         event(new WebhookMessagesRequestSending());

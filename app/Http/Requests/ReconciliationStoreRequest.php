@@ -40,6 +40,8 @@ class ReconciliationStoreRequest extends FormRequest
     use ChecksLogin;
     use ConvertsDataTypes;
 
+    protected array $acceptedRoles = [];
+
     /**
      * Returns the data required by the controller.
      */
@@ -69,13 +71,13 @@ class ReconciliationStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'start'        => 'required|date',
-            'end'          => 'required|date',
+            'start'        => ['required', 'date'],
+            'end'          => ['required', 'date'],
             'startBalance' => ['nullable', new IsValidAmount()],
             'endBalance'   => ['nullable', new IsValidAmount()],
             'difference'   => ['required', new IsValidAmount()],
             'journals'     => [new ValidJournals()],
-            'reconcile'    => 'required|in:create,nothing',
+            'reconcile'    => ['required', 'in:create,nothing'],
         ];
     }
 

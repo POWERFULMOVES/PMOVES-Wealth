@@ -52,7 +52,7 @@ use function Safe\json_encode;
 /**
  * Class AccountController.
  */
-class AccountController extends Controller
+final class AccountController extends Controller
 {
     use AugumentData;
     use ChartGeneration;
@@ -271,8 +271,8 @@ class AccountController extends Controller
         foreach ($result as $row) {
             $budgetId          = $row['budget_id'];
             $name              = $names[$budgetId];
-            $label             = (string) trans('firefly.name_in_currency', ['name'     => $name, 'currency' => $row['currency_name']]);
-            $chartData[$label] = ['amount'          => $row['total'], 'currency_symbol' => $row['currency_symbol'], 'currency_code'   => $row['currency_code']];
+            $label             = (string) trans('firefly.name_in_currency', ['name' => $name, 'currency' => $row['currency_name']]);
+            $chartData[$label] = ['amount' => $row['total'], 'currency_symbol' => $row['currency_symbol'], 'currency_code' => $row['currency_code']];
         }
 
         $data      = $this->generator->multiCurrencyPieChart($chartData);
@@ -354,8 +354,8 @@ class AccountController extends Controller
         foreach ($result as $row) {
             $categoryId        = $row['category_id'];
             $name              = $names[$categoryId] ?? '(unknown)';
-            $label             = (string) trans('firefly.name_in_currency', ['name'     => $name, 'currency' => $row['currency_name']]);
-            $chartData[$label] = ['amount'          => $row['total'], 'currency_symbol' => $row['currency_symbol'], 'currency_code'   => $row['currency_code']];
+            $label             = (string) trans('firefly.name_in_currency', ['name' => $name, 'currency' => $row['currency_name']]);
+            $chartData[$label] = ['amount' => $row['total'], 'currency_symbol' => $row['currency_symbol'], 'currency_code' => $row['currency_code']];
         }
 
         $data      = $this->generator->multiCurrencyPieChart($chartData);
@@ -465,8 +465,8 @@ class AccountController extends Controller
         foreach ($result as $row) {
             $categoryId        = $row['category_id'];
             $name              = $names[$categoryId] ?? '(unknown)';
-            $label             = (string) trans('firefly.name_in_currency', ['name'     => $name, 'currency' => $row['currency_name']]);
-            $chartData[$label] = ['amount'          => $row['total'], 'currency_symbol' => $row['currency_symbol'], 'currency_code'   => $row['currency_code']];
+            $label             = (string) trans('firefly.name_in_currency', ['name' => $name, 'currency' => $row['currency_name']]);
+            $chartData[$label] = ['amount' => $row['total'], 'currency_symbol' => $row['currency_symbol'], 'currency_code' => $row['currency_code']];
         }
         $data      = $this->generator->multiCurrencyPieChart($chartData);
         $cache->store($data);
@@ -589,7 +589,6 @@ class AccountController extends Controller
         Log::debug('End of chart loop.');
         // second loop (yes) to create nice array with info! Yay!
         $chartData       = [];
-
         foreach ($return as $key => $info) {
             if ('balance' !== $key && 'pc_balance' !== $key) {
                 // assume it's a currency:
@@ -607,6 +606,11 @@ class AccountController extends Controller
                 $info['currency_symbol'] = $this->primaryCurrency->symbol;
                 $info['currency_code']   = $this->primaryCurrency->code;
                 $info['label']           = sprintf('%s (%s) (%s)', $account->name, (string) trans('firefly.sum'), $this->primaryCurrency->symbol);
+            }
+            // do not add pc_balance to the array if the account is in the primary currency anyway,
+            // and it has no currency balances.
+            if (2 === count(array_keys($return)) && 'pc_balance' === $key && $accountCurrency->id === $this->primaryCurrency->id) {
+                continue;
             }
             $chartData[] = $info;
         }

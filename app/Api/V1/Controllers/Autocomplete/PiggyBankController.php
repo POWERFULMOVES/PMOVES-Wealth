@@ -38,7 +38,7 @@ use Illuminate\Http\Request;
 /**
  * Class PiggyBankController
  */
-class PiggyBankController extends Controller
+final class PiggyBankController extends Controller
 {
     private AccountRepositoryInterface $accountRepository;
     private PiggyBankRepositoryInterface $piggyRepository;
@@ -116,6 +116,7 @@ class PiggyBankController extends Controller
                 'currency_decimal_places' => $currency->decimal_places,
                 'object_group_id'         => null === $objectGroup ? null : (string) $objectGroup->id,
                 'object_group_title'      => $objectGroup?->title,
+                'object_group_order'      => $objectGroup?->order,
             ];
         }
 

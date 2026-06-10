@@ -53,7 +53,7 @@ class CorrectsInvertedBudgetLimits extends Command
      */
     public function handle(): int
     {
-        $set = BudgetLimit::where('start_date', '>', DB::raw('end_date'))->get();
+        $set = BudgetLimit::query()->where('start_date', '>', DB::raw('end_date'))->get();
         if (0 === $set->count()) {
             Log::debug('No inverted budget limits found.');
 
@@ -67,10 +67,6 @@ class CorrectsInvertedBudgetLimits extends Command
             $budgetLimit->start_date = $end;
             $budgetLimit->end_date   = $start;
             $budgetLimit->saveQuietly();
-        }
-
-        if ($set->count() > 0) {
-            // FIXME here be a available budget event.
         }
 
         if (1 === $set->count()) {

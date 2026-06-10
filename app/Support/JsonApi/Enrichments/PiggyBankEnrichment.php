@@ -42,26 +42,8 @@ use Illuminate\Support\Facades\Log;
 
 class PiggyBankEnrichment implements EnrichmentInterface
 {
-    private array $accountIds    = []; // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    private array $accounts      = []; // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
-    // @phpstan-ignore-line
+    private array $accountIds    = [];
+    private array $accounts      = [];
     private array $amounts       = [];
     private Collection $collection;
     private array $currencies    = [];
@@ -181,6 +163,7 @@ class PiggyBankEnrichment implements EnrichmentInterface
             }
 
             // get suggested per month.
+
             $meta['save_per_month']    = Steam::bcround(
                 $this->getSuggestedMonthlyAmount($this->date, $item->target_date, $meta['target_amount'], $meta['current_amount']),
                 $currency->decimal_places
@@ -206,16 +189,16 @@ class PiggyBankEnrichment implements EnrichmentInterface
             $this->ids[]            = $id;
             $this->currencyIds[$id] = (int) $piggy->transaction_currency_id;
         }
-        $this->ids  = array_unique($this->ids);
+        $this->ids     = array_unique($this->ids);
 
         // collect currencies.
-        $currencies = TransactionCurrency::whereIn('id', $this->currencyIds)->get();
+        $currencies    = TransactionCurrency::query()->whereIn('id', $this->currencyIds)->get();
         foreach ($currencies as $currency) {
             $this->currencies[(int) $currency->id] = $currency;
         }
 
         // collect accounts
-        $set        = DB::table('account_piggy_bank')->whereIn('piggy_bank_id', $this->ids)->get([
+        $set           = DB::table('account_piggy_bank')->whereIn('piggy_bank_id', $this->ids)->get([
             'piggy_bank_id',
             'account_id',
             'current_amount',
@@ -226,10 +209,11 @@ class PiggyBankEnrichment implements EnrichmentInterface
             $accountId                                        = (int) $item->account_id;
             $this->amounts[$id] ??= [];
             if (!array_key_exists($id, $this->accountIds)) {
-                $this->accountIds[$id] = (int) $item->account_id;
+                $this->accountIds[$id] = [];
             }
+            $this->accountIds[$id][]                          = (int) $item->account_id;
             if (!array_key_exists($accountId, $this->amounts[$id])) {
-                $this->amounts[$id][$accountId] = ['current_amount'    => '0', 'pc_current_amount' => '0'];
+                $this->amounts[$id][$accountId] = ['current_amount' => '0', 'pc_current_amount' => '0'];
             }
             $this->amounts[$id][$accountId]['current_amount'] = bcadd(
                 (string) $this->amounts[$id][$accountId]['current_amount'],
@@ -243,12 +227,17 @@ class PiggyBankEnrichment implements EnrichmentInterface
             }
         }
 
+        $allAccountIds = [];
+        foreach ($this->accountIds as $accountIds) {
+            $allAccountIds = array_merge($allAccountIds, $accountIds);
+        }
+
         // get account currency preference for ALL.
-        $set        = AccountMeta::whereIn('account_id', array_values($this->accountIds))->where('name', 'currency_id')->get();
+        $set           = AccountMeta::query()->whereIn('account_id', $allAccountIds)->where('name', 'currency_id')->get();
 
         /** @var AccountMeta $item */
         foreach ($set as $item) {
-            $accountId  = (int) $item->account_id;
+            // $accountId  = (int) $item->account_id;
             $currencyId = (int) $item->data;
             if (!array_key_exists($currencyId, $this->currencies)) {
                 $this->currencies[$currencyId] = Amount::getTransactionCurrencyById($currencyId);
@@ -257,13 +246,12 @@ class PiggyBankEnrichment implements EnrichmentInterface
             // $this->accountCurrencies[$accountId] = $this->currencies[$currencyId];
         }
 
-        // get account info.
-        $set        = Account::whereIn('id', array_values($this->accountIds))->get();
+        $set           = Account::query()->whereIn('id', $allAccountIds)->get();
 
         /** @var Account $item */
         foreach ($set as $item) {
             $id                  = (int) $item->id;
-            $this->accounts[$id] = ['id'   => $id, 'name' => $item->name];
+            $this->accounts[$id] = ['id' => $id, 'name' => $item->name];
         }
     }
 
@@ -298,7 +286,7 @@ class PiggyBankEnrichment implements EnrichmentInterface
             $this->mappedObjects[(int) $entry->object_groupable_id] = (int) $entry->object_group_id;
         }
 
-        $groups = ObjectGroup::whereIn('id', $ids)->get(['id', 'title', 'order'])->toArray();
+        $groups = ObjectGroup::query()->whereIn('id', $ids)->get(['id', 'title', 'order'])->toArray();
         foreach ($groups as $group) {
             $group['id']                            = (int) $group['id'];
             $group['order']                         = (int) $group['order'];
@@ -314,23 +302,21 @@ class PiggyBankEnrichment implements EnrichmentInterface
         if (null === $targetAmount || !$targetDate instanceof Carbon || !$startDate instanceof Carbon) {
             return '0';
         }
-        $savePerMonth = '0';
         if (1 === bccomp($targetAmount, $currentAmount)) {
-            $now             = today(config('app.timezone'));
-            $diffInMonths    = (int) $startDate->diffInMonths($targetDate);
+            $diffInMonths    = ceil($startDate->diffInMonths($targetDate));
             $remainingAmount = bcsub($targetAmount, $currentAmount);
 
             // more than 1 month to go and still need money to save:
             if ($diffInMonths > 0 && 1 === bccomp($remainingAmount, '0')) {
-                $savePerMonth = bcdiv($remainingAmount, (string) $diffInMonths);
+                return bcdiv($remainingAmount, (string) $diffInMonths);
             }
 
             // less than 1 month to go but still need money to save:
-            if (0 === $diffInMonths && 1 === bccomp($remainingAmount, '0')) {
-                $savePerMonth = $remainingAmount;
+            if (1 === bccomp($remainingAmount, '0')) {
+                return $remainingAmount;
             }
         }
 
-        return $savePerMonth;
+        return '0';
     }
 }

@@ -41,7 +41,7 @@ class PaginationRequest extends ApiRequest
 
         $this->sortClass = $config['sort_class'] ?? null;
 
-        if (!$this->sortClass) {
+        if (null === $this->sortClass) {
             throw new RuntimeException('PaginationRequest requires a sort_class config');
         }
     }
@@ -50,15 +50,15 @@ class PaginationRequest extends ApiRequest
     {
         return [
             'sort'  => ['nullable', new IsValidSortInstruction((string) $this->sortClass)],
-            'limit' => 'numeric|min:1|max:131337',
-            'page'  => 'numeric|min:1|max:131337',
+            'limit' => ['numeric', 'min:1', 'max:131337'],
+            'page'  => ['numeric', 'min:1', 'max:131337'],
         ];
     }
 
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if ($validator->failed()) {
+            if (count($validator->failed()) > 0) {
                 return;
             }
 
@@ -72,7 +72,7 @@ class PaginationRequest extends ApiRequest
             $page   = $this->convertInteger('page');
             $page   = min(max(1, $page), 2 ** 16);
             $offset = ($page - 1) * $limit;
-            $sort   = $this->sortClass ? $this->convertSortParameters('sort', $this->sortClass) : $this->get('sort');
+            $sort   = null !== $this->sortClass ? $this->convertSortParameters('sort', $this->sortClass) : $this->get('sort');
             $this->attributes->set('limit', $limit);
             $this->attributes->set('sort', $sort);
             $this->attributes->set('page', $page);

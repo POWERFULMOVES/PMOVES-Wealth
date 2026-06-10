@@ -27,8 +27,10 @@ namespace FireflyIII\Support\Request;
 use Carbon\Carbon;
 use Carbon\Exceptions\InvalidDateException;
 use Carbon\Exceptions\InvalidFormatException;
+use FireflyIII\Models\UserGroup;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Support\Facades\Steam;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -36,6 +38,8 @@ use function Safe\preg_replace;
 
 /**
  * Trait ConvertsDataTypes
+ *
+ * @method UserGroup validateUserGroup(Request $request)
  */
 trait ConvertsDataTypes
 {
@@ -205,10 +209,9 @@ trait ConvertsDataTypes
         /** @var AccountRepositoryInterface $repository */
         $repository = app(AccountRepositoryInterface::class);
 
-        if (method_exists($this, 'validateUserGroup')) { // @phpstan-ignore-line
-            $userGroup = $this->validateUserGroup($this);
-            $repository->setUserGroup($userGroup);
-        }
+        // blindly assume this method exists.
+        $userGroup  = $this->validateUserGroup($this);
+        $repository->setUserGroup($userGroup);
 
         // set administration ID
         // group ID
@@ -232,7 +235,12 @@ trait ConvertsDataTypes
      */
     public function stringWithNewlines(string $field): string
     {
-        return (string) $this->clearStringKeepNewlines((string) ($this->get($field) ?? ''));
+        $entry = $this->get($field);
+        if (!is_scalar($entry)) {
+            return '';
+        }
+
+        return (string) $this->clearStringKeepNewlines((string) $entry);
     }
 
     /**
@@ -290,11 +298,11 @@ trait ConvertsDataTypes
             // probably a date format.
             try {
                 $carbon = Carbon::createFromFormat('Y-m-d', $value, config('app.timezone'));
-            } catch (InvalidDateException $e) { // @phpstan-ignore-line
+            } catch (InvalidDateException $e) {
                 Log::error(sprintf('[1] "%s" is not a valid date: %s', $value, $e->getMessage()));
 
                 return null;
-            } catch (InvalidFormatException $e) { // @phpstan-ignore-line
+            } catch (InvalidFormatException $e) {
                 Log::error(sprintf('[2] "%s" is of an invalid format: %s', $value, $e->getMessage()));
 
                 return null;
@@ -312,7 +320,7 @@ trait ConvertsDataTypes
         try {
             $carbon = Carbon::parse($value);
             $carbon->setTimezone(config('app.timezone'));
-        } catch (InvalidDateException $e) { // @phpstan-ignore-line
+        } catch (InvalidDateException $e) {
             Log::error(sprintf('[3] "%s" is not a valid date or time: %s', $value, $e->getMessage()));
 
             return null;
@@ -351,7 +359,7 @@ trait ConvertsDataTypes
         try {
             $carbon = new Carbon($string, config('app.timezone'));
         } catch (InvalidFormatException) {
-            // @ignoreException
+            Log::debug(sprintf('"%s" is not a valid date, but that is OK.', $string));
         }
         if (!$carbon instanceof Carbon) {
             Log::debug(sprintf('Invalid date: %s', $string));
@@ -385,7 +393,7 @@ trait ConvertsDataTypes
         foreach ($fields as $field => $info) {
             if (true === $this->has($info[0])) {
                 $method         = $info[1];
-                $return[$field] = $this->{$method}($info[0]); // @phpstan-ignore-line
+                $return[$field] = $this->{$method}($info[0]);
             }
         }
 
@@ -466,7 +474,10 @@ trait ConvertsDataTypes
             if (!array_key_exists('current_amount', $entry)) {
                 $amount = null;
             }
-            $return[] = ['account_id'     => $this->integerFromValue((string) ($entry['account_id'] ?? '0')), 'current_amount' => $amount];
+            $return[] = [
+                'account_id'     => $this->integerFromValue((string) ($entry['account_id'] ?? '0')),
+                'current_amount' => $amount,
+            ];
         }
 
         return $return;

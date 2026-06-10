@@ -28,6 +28,7 @@ use FireflyIII\Models\PiggyBank;
 use FireflyIII\Rules\IsValidPositiveAmount;
 use FireflyIII\Rules\IsValidZeroOrMoreAmount;
 use FireflyIII\Rules\LessThanPiggyTarget;
+use FireflyIII\Rules\PiggyBank\IsEnoughInAccounts;
 use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
 use Illuminate\Foundation\Http\FormRequest;
@@ -39,6 +40,8 @@ class UpdateRequest extends FormRequest
 {
     use ChecksLogin;
     use ConvertsDataTypes;
+
+    protected array $acceptedRoles = [];
 
     /**
      * Get all data from the request.
@@ -76,17 +79,17 @@ class UpdateRequest extends FormRequest
             'name'                      => 'min:1|max:255|uniquePiggyBankForUser:'.$piggyBank->id,
             'current_amount'            => ['nullable', new LessThanPiggyTarget(), new IsValidPositiveAmount()],
             'target_amount'             => ['nullable', new IsValidZeroOrMoreAmount()],
-            'start_date'                => 'date|nullable',
-            'target_date'               => 'date|nullable|after:start_date',
+            'start_date'                => ['date', 'nullable'],
+            'target_date'               => ['date', 'nullable', 'after:start_date'],
             'notes'                     => 'max:65000',
             'accounts'                  => 'array',
             'accounts.*'                => 'array',
             'accounts.*.account_id'     => ['required', 'numeric', 'belongsToUser:accounts,id'],
-            'accounts.*.current_amount' => ['numeric', 'nullable', new IsValidZeroOrMoreAmount(true)],
-            'object_group_id'           => 'numeric|belongsToUser:object_groups,id',
+            'accounts.*.current_amount' => ['numeric', 'nullable', new IsValidZeroOrMoreAmount(true), new IsEnoughInAccounts($piggyBank, $this->getAll())],
+            'object_group_id'           => ['numeric', 'belongsToUser:object_groups,id'],
             'object_group_title'        => ['min:1', 'max:255'],
-            'transaction_currency_id'   => 'exists:transaction_currencies,id|nullable',
-            'transaction_currency_code' => 'exists:transaction_currencies,code|nullable',
+            'transaction_currency_id'   => ['exists:transaction_currencies,id', 'nullable'],
+            'transaction_currency_code' => ['exists:transaction_currencies,code', 'nullable'],
         ];
     }
 }

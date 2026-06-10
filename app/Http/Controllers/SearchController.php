@@ -36,7 +36,7 @@ use Throwable;
 /**
  * Class SearchController.
  */
-class SearchController extends Controller
+final class SearchController extends Controller
 {
     /**
      * SearchController constructor.
@@ -87,7 +87,7 @@ class SearchController extends Controller
         $excludedWords    = $searcher->getExcludedWords();
         $operators        = $searcher->getOperators();
         $invalidOperators = $searcher->getInvalidOperators();
-        $subTitle         = (string) trans('breadcrumbs.search_result', ['query'         => $fullQuery]);
+        $subTitle         = (string) trans('breadcrumbs.search_result', ['query' => $fullQuery]);
 
         return view('search.index', [
             'words'            => $words,
@@ -128,7 +128,7 @@ class SearchController extends Controller
         $groups->setPath($url);
 
         try {
-            $html = view('search.search', ['groups'     => $groups, 'hasPages'   => $hasPages, 'searchTime' => $searchTime])->render();
+            $html = view('search.search', ['groups' => $groups, 'hasPages' => $hasPages, 'searchTime' => $searchTime])->render();
         } catch (Throwable $e) {
             Log::error(sprintf('Cannot render search.search: %s', $e->getMessage()));
             Log::error($e->getTraceAsString());
@@ -137,6 +137,6 @@ class SearchController extends Controller
             throw new FireflyException($html, 0, $e);
         }
 
-        return response()->json(['count' => $groups->count(), 'html'  => $html]);
+        return response()->json(['count' => $groups->count(), 'html' => $html]);
     }
 }

@@ -35,7 +35,7 @@ use Throwable;
 /**
  * Class OperationsController.
  */
-class OperationsController extends Controller
+final class OperationsController extends Controller
 {
     /** @var AccountTaskerInterface Some specific account things. */
     private $tasker;
@@ -77,7 +77,7 @@ class OperationsController extends Controller
         $type   = 'expense-entry';
 
         try {
-            $result = view('reports.partials.income-expenses', ['report' => $report, 'type'   => $type])->render();
+            $result = view('reports.partials.income-expenses', ['report' => $report, 'type' => $type])->render();
         } catch (Throwable $e) {
             Log::error(sprintf('Could not render reports.partials.income-expense: %s', $e->getMessage()));
             Log::error($e->getTraceAsString());
@@ -111,7 +111,7 @@ class OperationsController extends Controller
         $type   = 'income-entry';
 
         try {
-            $result = view('reports.partials.income-expenses', ['report' => $report, 'type'   => $type])->render();
+            $result = view('reports.partials.income-expenses', ['report' => $report, 'type' => $type])->render();
         } catch (Throwable $e) {
             Log::error(sprintf('Could not render reports.partials.income-expenses: %s', $e->getMessage()));
             Log::error($e->getTraceAsString());

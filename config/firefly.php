@@ -75,13 +75,19 @@ return [
         'webhooks'               => true,
         'handle_debts'           => true,
         'expression_engine'      => true,
-        'running_balance_column' => (bool)envNonEmpty('USE_RUNNING_BALANCE', true), // this is only the default value, is not used.
+        'running_balance_column' => (bool)env_default_when_empty(env('USE_RUNNING_BALANCE'), true), // this is only the default value, is not used.
         // see cer.php for exchange rates feature flag.
     ],
-    'version'                              => '6.4.18',
-    'build_time'                           => 1770535525,
+'version' => '6.6.3',
+'build_time' => 1779339576,
     'api_version'                          => '2.1.0', // field is no longer used.
     'db_version'                           => 28, // field is no longer used.
+
+    // Docker build info, if present:
+    'is_docker'                            => env('IS_DOCKER', false),
+    'base_image_build'                     => env_default_when_empty(env('BASE_IMAGE_BUILD'), '(unknown)'),
+    'base_image_date'                      => env_default_when_empty(env('BASE_IMAGE_DATE'), '(unknown)'),
+    'is_local_dev'                         => env('IS_LOCAL_DEV', false),
 
     // generic settings
     'maxUploadSize'                        => 1073741824, // 1 GB
@@ -91,7 +97,7 @@ return [
     // tokens and keys
     'fixer_api_key'                        => env('FIXER_API_KEY', ''),
     'ipinfo_token'                         => env('IPINFO_TOKEN', ''),
-    'static_cron_token'                    => envNonEmpty('STATIC_CRON_TOKEN'),
+    'static_cron_token'                    => env('STATIC_CRON_TOKEN'),
 
     // flags
     'enable_external_map'                  => env('ENABLE_EXTERNAL_MAP', false), // no longer used, only for default.
@@ -106,8 +112,8 @@ return [
     'tracker_url'                          => env('TRACKER_URL', ''),
 
     // authentication settings
-    'authentication_guard'                 => envNonEmpty('AUTHENTICATION_GUARD', 'web'),
-    'custom_logout_url'                    => envNonEmpty('CUSTOM_LOGOUT_URL', ''),
+    'authentication_guard'                 => env_default_when_empty(env('AUTHENTICATION_GUARD'), 'web'),
+    'custom_logout_url'                    => env_default_when_empty(env('CUSTOM_LOGOUT_URL'), ''),
 
     // static config (cannot be changed by user)
     'update_endpoint'                      => 'https://version.firefly-iii.org/index.json',
@@ -188,10 +194,11 @@ return [
         'convertToPrimary'   => false,
     ],
     'default_currency'                     => 'EUR',
-    'default_language'                     => envNonEmpty('DEFAULT_LANGUAGE', 'en_US'),
-    'default_locale'                       => envNonEmpty('DEFAULT_LOCALE', 'equal'),
+    'default_language'                     => env_default_when_empty(env('DEFAULT_LANGUAGE'), 'en_US'),
+    'default_locale'                       => env_default_when_empty(env('DEFAULT_LOCALE'), 'equal'),
 
     // account types that may have or set a currency
+
     'valid_currency_account_types'         => [
         AccountTypeEnum::ASSET->value,
         AccountTypeEnum::LOAN->value,
@@ -218,7 +225,7 @@ return [
     'available_dark_modes'                 => ['light', 'dark', 'browser'],
     'bill_reminder_periods'                => [90, 30, 14, 7, 0],
     'valid_view_ranges'                    => ['1D', '1W', '1M', '3M', '6M', '1Y'],
-    'valid_url_protocols'                  => envNonEmpty('VALID_URL_PROTOCOLS', 'http,https,ftp,ftps,mailto'), // no longer used, only for default.
+    'valid_url_protocols'                  => env_default_when_empty(env('VALID_URL_PROTOCOLS'), 'http,https,ftp,ftps,mailto,abacusfiiiapp'), // no longer used, only for default.
     'allowedMimes'                         => [
         // plain files
         'text/plain',

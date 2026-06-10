@@ -30,7 +30,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Log;
 
-class CreateController extends Controller
+final class CreateController extends Controller
 {
     /**
      * @return Application|Factory|\Illuminate\Contracts\Foundation\Application|View
@@ -42,6 +42,6 @@ class CreateController extends Controller
         $mainTitleIcon = 'fa-book';
         Log::debug(sprintf('Now at %s', __METHOD__));
 
-        return view('administrations.create')->with(['title'         => $title, 'subTitle'      => $subTitle, 'mainTitleIcon' => $mainTitleIcon]); // @phpstan-ignore-line
+        return view('administrations.create')->with(['title' => $title, 'subTitle' => $subTitle, 'mainTitleIcon' => $mainTitleIcon]);
     }
 }

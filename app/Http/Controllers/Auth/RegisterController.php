@@ -31,14 +31,11 @@ use FireflyIII\Repositories\User\UserRepositoryInterface;
 use FireflyIII\Support\Facades\FireflyConfig;
 use FireflyIII\Support\Http\Controllers\CreateStuff;
 use FireflyIII\User;
-use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -50,7 +47,7 @@ use Psr\Container\NotFoundExceptionInterface;
  * validation and creation. By default this controller uses a trait to
  * provide this functionality without requiring any additional code.
  */
-class RegisterController extends Controller
+final class RegisterController extends Controller
 {
     use CreateStuff;
     use RegistersUsers;
@@ -75,15 +72,7 @@ class RegisterController extends Controller
         }
     }
 
-    /**
-     * Handle a registration request for the application.
-     *
-     * @return Application|Redirector|RedirectResponse
-     *
-     * @throws FireflyException
-     * @throws ValidationException
-     */
-    public function register(Request $request): Redirector|RedirectResponse
+    public function register(Request $request): RedirectResponse
     {
         $allowRegistration = $this->allowedToRegister();
         $inviteCode        = (string) $request->get('invite_code');
@@ -94,8 +83,8 @@ class RegisterController extends Controller
             throw new FireflyException('Registration is currently not available :(');
         }
 
-        $this->validator($request->all())->validate();
-        $user              = $this->createUser($request->all());
+        $this->validator($request->only(['email', 'password', 'password_confirmation']))->validate();
+        $user              = $this->createUser($request->only(['email', 'password']));
         Log::info(sprintf('Registered new user %s', $user->email));
         $owner             = new OwnerNotifiable();
         event(new NewUserRegistered($owner, $user));
@@ -144,7 +133,7 @@ class RegisterController extends Controller
 
         $email             = $request->old('email');
 
-        return view('auth.register', ['isDemoSite' => $isDemoSite, 'email'      => $email, 'pageTitle'  => $pageTitle, 'inviteCode' => $inviteCode]);
+        return view('auth.register', ['isDemoSite' => $isDemoSite, 'email' => $email, 'pageTitle' => $pageTitle, 'inviteCode' => $inviteCode]);
     }
 
     /**
@@ -170,13 +159,13 @@ class RegisterController extends Controller
 
         $email             = $request?->old('email');
 
-        return view('auth.register', ['isDemoSite' => $isDemoSite, 'email'      => $email, 'pageTitle'  => $pageTitle]);
+        return view('auth.register', ['isDemoSite' => $isDemoSite, 'email' => $email, 'pageTitle' => $pageTitle]);
     }
 
     /**
      * @throws FireflyException
      */
-    protected function allowedToRegister(): bool
+    private function allowedToRegister(): bool
     {
         // is allowed to register?
         $allowRegistration = true;

@@ -37,11 +37,11 @@ return [
     */
 
     'defaults'         => [
-        'guard'     => envNonEmpty('AUTHENTICATION_GUARD', 'web'),
+        'guard'     => env_default_when_empty(env('AUTHENTICATION_GUARD'), 'web'),
         'passwords' => 'users',
     ],
-    'guard_header'     => envNonEmpty('AUTHENTICATION_GUARD_HEADER', 'REMOTE_USER'),
-    'guard_email'      => envNonEmpty('AUTHENTICATION_GUARD_EMAIL'),
+    'guard_header'     => env_default_when_empty(env('AUTHENTICATION_GUARD_HEADER'), 'REMOTE_USER'),
+    'guard_email'      => env('AUTHENTICATION_GUARD_EMAIL'),
 
     /*
     |--------------------------------------------------------------------------
@@ -64,7 +64,7 @@ return [
         'web'               => [
             'driver'   => 'session',
             'provider' => 'users',
-            'remember' => true,
+            'remember' => 364 * 24 * 60, // 364 days.
         ],
         'remote_user_guard' => [
             'driver'   => 'remote_user_guard',

@@ -46,7 +46,7 @@ use Psr\Container\NotFoundExceptionInterface;
 /**
  * Class ShowController
  */
-class ShowController extends Controller
+final class ShowController extends Controller
 {
     use AugumentData;
     use PeriodOverview;
@@ -113,7 +113,7 @@ class ShowController extends Controller
         $groups    = $collector->getPaginatedGroups();
         $groups->setPath(route('budgets.no-budget'));
 
-        return view('budgets.no-budget', ['groups'   => $groups, 'subTitle' => $subTitle, 'periods'  => $periods, 'start'    => $start, 'end'      => $end]);
+        return view('budgets.no-budget', ['groups' => $groups, 'subTitle' => $subTitle, 'periods' => $periods, 'start' => $start, 'end' => $end]);
     }
 
     /**
@@ -147,7 +147,7 @@ class ShowController extends Controller
         $groups    = $collector->getPaginatedGroups();
         $groups->setPath(route('budgets.no-budget-all'));
 
-        return view('budgets.no-budget', ['groups'   => $groups, 'subTitle' => $subTitle, 'start'    => $start, 'end'      => $end]);
+        return view('budgets.no-budget', ['groups' => $groups, 'subTitle' => $subTitle, 'start' => $start, 'end' => $end]);
     }
 
     /**

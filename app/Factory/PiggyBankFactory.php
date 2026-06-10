@@ -134,6 +134,13 @@ class PiggyBankFactory
                 $previous                 = $toBeLinked[$account->id]['current_amount'] ?? '0';
                 $diff                     = bcsub($info['current_amount'], $previous);
 
+                // if money is added, check if we can!
+                if (1 === bccomp($diff, '0') && !$this->piggyBankRepository->canAddAmount($piggyBank, $account, $diff)) {
+                    Log::debug(sprintf('Cannot add amount %s to piggy bank #%d ("%s")', $diff, $piggyBank->id, $piggyBank->name));
+
+                    continue;
+                }
+
                 // create event for difference.
                 if (0 !== bccomp($diff, '0')) {
                     // 2025-10-01 for issue #10990 disable this event.
@@ -158,9 +165,9 @@ class PiggyBankFactory
                     // event(new ChangedAmount($piggyBank, $diff, null, null));
                 }
 
-                // no amount set, use previous amount or go to ZERO.
+                // no amount set, use previous amount
                 $toBeLinked[$account->id] = ['current_amount' => $toBeLinked[$account->id]['current_amount'] ?? '0'];
-                Log::debug(sprintf('[b] Will link account #%d with amount %s', $account->id, $toBeLinked[$account->id]['current_amount'] ?? '0'));
+                Log::debug(sprintf('[b] Will link account #%d with amount %s', $account->id, $toBeLinked[$account->id]['current_amount']));
 
                 // create event:
                 Log::debug('linkToAccountIds: Trigger change for positive amount [b].');
@@ -238,7 +245,10 @@ class PiggyBankFactory
         );
 
         // validate amount:
-        if (array_key_exists('target_amount', $piggyBankData) && '' === (string) $piggyBankData['target_amount']) {
+        if (array_key_exists('target_amount', $piggyBankData) && '' === trim((string) $piggyBankData['target_amount'])) {
+            $piggyBankData['target_amount'] = '0';
+        }
+        if (!array_key_exists('target_amount', $piggyBankData)) {
             $piggyBankData['target_amount'] = '0';
         }
 
@@ -246,7 +256,7 @@ class PiggyBankFactory
         $piggyBankData['target_date_tz']          = $piggyBankData['target_date']?->format('e');
         $piggyBankData['account_id']              = null;
         $piggyBankData['transaction_currency_id'] = $this->getCurrency($data)->id;
-        $piggyBankData['order']                   = 131337;
+        $piggyBankData['order']                   = 131_337;
 
         try {
             /** @var PiggyBank $piggyBank */

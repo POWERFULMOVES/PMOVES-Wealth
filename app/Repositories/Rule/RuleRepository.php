@@ -100,11 +100,7 @@ class RuleRepository implements RuleRepositoryInterface, UserGroupInterface
      */
     public function getAll(): Collection
     {
-        return $this->user
-            ->rules()
-            ->with(['ruleGroup'])
-            ->get()
-        ;
+        return $this->user->rules()->with(['ruleGroup', 'ruleTriggers', 'ruleActions'])->get();
     }
 
     /**
@@ -309,11 +305,7 @@ class RuleRepository implements RuleRepositoryInterface, UserGroupInterface
             $ruleGroup = $this->user->ruleGroups()->find($data['rule_group_id']);
         }
         if (array_key_exists('rule_group_title', $data)) {
-            $ruleGroup = $this->user
-                ->ruleGroups()
-                ->where('title', $data['rule_group_title'])
-                ->first()
-            ;
+            $ruleGroup = $this->user->ruleGroups()->where('title', $data['rule_group_title'])->first();
         }
         if (null === $ruleGroup) {
             throw new FireflyException('No such rule group.');
@@ -327,7 +319,7 @@ class RuleRepository implements RuleRepositoryInterface, UserGroupInterface
         $rule->userGroup()->associate($this->user->userGroup);
 
         $rule->rule_group_id   = $ruleGroup->id;
-        $rule->order           = 31337;
+        $rule->order           = 31_337;
         $rule->active          = array_key_exists('active', $data) ? $data['active'] : true;
         $rule->strict          = array_key_exists('strict', $data) ? $data['strict'] : false;
         $rule->stop_processing = array_key_exists('stop_processing', $data) ? $data['stop_processing'] : false;

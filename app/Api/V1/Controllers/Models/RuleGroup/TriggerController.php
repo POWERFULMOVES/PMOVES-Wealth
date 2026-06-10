@@ -43,7 +43,7 @@ use League\Fractal\Resource\Collection as FractalCollection;
 /**
  * Class TriggerController
  */
-class TriggerController extends Controller
+final class TriggerController extends Controller
 {
     private RuleGroupRepositoryInterface $ruleGroupRepository;
 
@@ -85,15 +85,15 @@ class TriggerController extends Controller
         // overrule the rule(s) if necessary.
         if (array_key_exists('start', $parameters) && null !== $parameters['start']) {
             // add a range:
-            $ruleEngine->addOperator(['type'  => 'date_after', 'value' => $parameters['start']->format('Y-m-d')]);
+            $ruleEngine->addOperator(['type' => 'date_after', 'value' => $parameters['start']->format('Y-m-d')]);
         }
 
         if (array_key_exists('end', $parameters) && null !== $parameters['end']) {
             // add a range:
-            $ruleEngine->addOperator(['type'  => 'date_before', 'value' => $parameters['end']->format('Y-m-d')]);
+            $ruleEngine->addOperator(['type' => 'date_before', 'value' => $parameters['end']->format('Y-m-d')]);
         }
         if (array_key_exists('accounts', $parameters) && '' !== $parameters['accounts']) {
-            $ruleEngine->addOperator(['type'  => 'account_id', 'value' => implode(',', $parameters['accounts'])]);
+            $ruleEngine->addOperator(['type' => 'account_id', 'value' => implode(',', $parameters['accounts'])]);
         }
 
         // file the rule(s)
@@ -105,7 +105,7 @@ class TriggerController extends Controller
         $enrichment->setUser($group->user);
         $transactions = $enrichment->enrich($transactions);
 
-        $paginator    = new LengthAwarePaginator($transactions, $count, 31337, $this->parameters->get('page'));
+        $paginator    = new LengthAwarePaginator($transactions, $count, 31_337, $this->parameters->get('page'));
         $paginator->setPath(route('api.v1.rule-groups.test', [$group->id]).$this->buildParams());
 
         // resulting list is presented as JSON thing.
@@ -146,15 +146,15 @@ class TriggerController extends Controller
         // overrule the rule(s) if necessary.
         if (array_key_exists('start', $parameters) && null !== $parameters['start']) {
             // add a range:
-            $ruleEngine->addOperator(['type'  => 'date_after', 'value' => $parameters['start']->format('Y-m-d')]);
+            $ruleEngine->addOperator(['type' => 'date_after', 'value' => $parameters['start']->format('Y-m-d')]);
         }
 
         if (array_key_exists('end', $parameters) && null !== $parameters['end']) {
             // add a range:
-            $ruleEngine->addOperator(['type'  => 'date_before', 'value' => $parameters['end']->format('Y-m-d')]);
+            $ruleEngine->addOperator(['type' => 'date_before', 'value' => $parameters['end']->format('Y-m-d')]);
         }
         if (array_key_exists('accounts', $parameters) && is_array($parameters['accounts']) && count($parameters['accounts']) > 0) {
-            $ruleEngine->addOperator(['type'  => 'account_id', 'value' => implode(',', $parameters['accounts'])]);
+            $ruleEngine->addOperator(['type' => 'account_id', 'value' => implode(',', $parameters['accounts'])]);
         }
 
         // file the rule(s)

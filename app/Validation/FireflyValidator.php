@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace FireflyIII\Validation;
 
-use Config;
 use ErrorException;
 use FireflyIII\Enums\AccountTypeEnum;
 use FireflyIII\Exceptions\FireflyException;
@@ -110,11 +109,7 @@ class FireflyValidator extends Validator
         if (0 === (int) $value) {
             return true;
         }
-        $count = DB::table($parameters[0])
-            ->where('user_id', auth()->user()->id)
-            ->where($field, $value)
-            ->count()
-        ;
+        $count = DB::table($parameters[0])->where('user_id', auth()->user()->id)->where($field, $value)->count();
 
         return 1 === $count;
     }
@@ -263,7 +258,7 @@ class FireflyValidator extends Validator
 
         try {
             $checksum = bcmod($iban, '97');
-        } catch (ValueError $e) { // @phpstan-ignore-line
+        } catch (ValueError $e) {
             $message = sprintf('Could not validate IBAN check value "%s" (IBAN "%s")', $iban, $value);
             Log::error($message);
             Log::error($e->getTraceAsString());
@@ -477,7 +472,10 @@ class FireflyValidator extends Validator
         // check transaction type.
         // TODO create a helper to automatically return these.
         if ('transaction_type' === $triggerType) {
-            $count = TransactionType::where('type', ucfirst((string) $value))->count();
+            $count = TransactionType::query()
+                ->where('type', ucfirst((string) $value))
+                ->count()
+            ;
 
             return 1 === $count;
         }
@@ -500,13 +498,7 @@ class FireflyValidator extends Validator
         return true;
     }
 
-    /**
-     * @param mixed $attribute
-     * @param mixed $value
-     *
-     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
-     */
-    public function validateSecurePassword($attribute, ?string $value): bool
+    public function validateSecurePassword(mixed $attribute, ?string $value): bool
     {
         $value  = (string) $value;
         $verify = false;
@@ -641,11 +633,7 @@ class FireflyValidator extends Validator
      */
     public function validateUniqueCurrency(string $field, string $attribute, string $value): bool
     {
-        return 0 === DB::table('transaction_currencies')
-            ->where($field, $value)
-            ->whereNull('deleted_at')
-            ->count()
-        ;
+        return 0 === DB::table('transaction_currencies')->where($field, $value)->whereNull('deleted_at')->count();
     }
 
     /**
@@ -890,13 +878,13 @@ class FireflyValidator extends Validator
     private function validateByAccountTypeString(string $value, array $parameters, string $type): bool
     {
         /** @var null|array $search */
-        $search         = Config::get('firefly.accountTypeByIdentifier.'.$type);
+        $search         = config('firefly.accountTypeByIdentifier.'.$type);
 
         if (null === $search) {
             return false;
         }
 
-        $accountTypes   = AccountType::whereIn('type', $search)->get();
+        $accountTypes   = AccountType::query()->whereIn('type', $search)->get();
         $ignore         = (int) ($parameters[0] ?? 0.0);
         $accountTypeIds = $accountTypes->pluck('id')->toArray();
 

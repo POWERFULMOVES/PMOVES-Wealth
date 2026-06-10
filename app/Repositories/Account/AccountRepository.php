@@ -60,11 +60,7 @@ class AccountRepository implements AccountRepositoryInterface, UserGroupInterfac
 
     public function count(array $types): int
     {
-        return $this->user
-            ->accounts()
-            ->accountTypeIn($types)
-            ->count()
-        ;
+        return $this->user->accounts()->accountTypeIn($types)->count();
     }
 
     /**
@@ -88,12 +84,7 @@ class AccountRepository implements AccountRepositoryInterface, UserGroupInterfac
 
         /** @var Account $account */
         foreach ($accounts as $account) {
-            $byName = $this->user
-                ->accounts()
-                ->where('name', $account->name)
-                ->where('id', '!=', $account->id)
-                ->first()
-            ;
+            $byName = $this->user->accounts()->where('name', $account->name)->where('id', '!=', $account->id)->first();
             if (null !== $byName) {
                 $result->push($account);
                 $result->push($byName);
@@ -101,12 +92,7 @@ class AccountRepository implements AccountRepositoryInterface, UserGroupInterfac
                 continue;
             }
             if (null !== $account->iban) {
-                $byIban = $this->user
-                    ->accounts()
-                    ->where('iban', $account->iban)
-                    ->where('id', '!=', $account->id)
-                    ->first()
-                ;
+                $byIban = $this->user->accounts()->where('iban', $account->iban)->where('id', '!=', $account->id)->first();
                 if (null !== $byIban) {
                     $result->push($account);
                     $result->push($byIban);
@@ -151,11 +137,7 @@ class AccountRepository implements AccountRepositoryInterface, UserGroupInterfac
     public function findByIbanNull(string $iban, array $types): ?Account
     {
         $iban  = Steam::filterSpaces($iban);
-        $query = $this->user
-            ->accounts()
-            ->where('iban', '!=', '')
-            ->whereNotNull('iban')
-        ;
+        $query = $this->user->accounts()->where('iban', '!=', '')->whereNotNull('iban');
 
         if (0 !== count($types)) {
             $query->leftJoin('account_types', 'accounts.account_type_id', '=', 'account_types.id');
@@ -271,7 +253,7 @@ class AccountRepository implements AccountRepositoryInterface, UserGroupInterfac
     {
         $query = $this->user
             ->accounts()
-            ->with([ // @phpstan-ignore-line
+            ->with([
                 'accountmeta' => static function (HasMany $query): void {
                     $query->where('name', 'account_role');
                 },
@@ -296,7 +278,7 @@ class AccountRepository implements AccountRepositoryInterface, UserGroupInterfac
         /** @var Storage $disk */
         $disk = Storage::disk('upload');
 
-        return $set->each(static function (Attachment $attachment) use ($disk): Attachment { // @phpstan-ignore-line
+        return $set->each(static function (Attachment $attachment) use ($disk): Attachment {
             $notes                   = $attachment->notes()->first();
             $attachment->file_exists = $disk->exists($attachment->fileName());
             $attachment->notes_text  = null !== $notes ? $notes->text : '';
@@ -311,7 +293,7 @@ class AccountRepository implements AccountRepositoryInterface, UserGroupInterfac
     public function getCashAccount(): Account
     {
         /** @var AccountType $type */
-        $type    = AccountType::where('type', AccountTypeEnum::CASH->value)->first();
+        $type    = AccountType::query()->where('type', AccountTypeEnum::CASH->value)->first();
 
         /** @var AccountFactory $factory */
         $factory = app(AccountFactory::class);
@@ -335,7 +317,7 @@ class AccountRepository implements AccountRepositoryInterface, UserGroupInterfac
     {
         $query = $this->user
             ->accounts()
-            ->with(['accountmeta' => static function (HasMany $query): void { // @phpstan-ignore-line
+            ->with(['accountmeta' => static function (HasMany $query): void {
                 $query->where('name', 'account_role');
             }])
         ;
@@ -447,18 +429,13 @@ class AccountRepository implements AccountRepositoryInterface, UserGroupInterfac
             throw new FireflyException(sprintf('%s is not an asset account.', $account->name));
         }
         $currency = $this->getAccountCurrency($account) ?? Amount::getPrimaryCurrency();
-        $name     = trans('firefly.reconciliation_account_name', ['name'     => $account->name, 'currency' => $currency->code]);
+        $name     = trans('firefly.reconciliation_account_name', ['name' => $account->name, 'currency' => $currency->code]);
 
         /** @var AccountType $type */
-        $type     = AccountType::where('type', AccountTypeEnum::RECONCILIATION->value)->first();
+        $type     = AccountType::query()->where('type', AccountTypeEnum::RECONCILIATION->value)->first();
 
         /** @var null|Account $current */
-        $current  = $this->user
-            ->accounts()
-            ->where('account_type_id', $type->id)
-            ->where('name', $name)
-            ->first()
-        ;
+        $current  = $this->user->accounts()->where('account_type_id', $type->id)->where('name', $name)->first();
 
         if (null !== $current) {
             return $current;
@@ -489,7 +466,7 @@ class AccountRepository implements AccountRepositoryInterface, UserGroupInterfac
         }
         $currencyIds = array_unique($currencyIds);
 
-        return TransactionCurrency::whereIn('id', $currencyIds)->get();
+        return TransactionCurrency::query()->whereIn('id', $currencyIds)->get();
     }
 
     public function isLiability(Account $account): bool
@@ -666,6 +643,31 @@ class AccountRepository implements AccountRepositoryInterface, UserGroupInterfac
         $dbQuery = $this->user
             ->accounts()
             ->where('active', true)
+            ->orderBy('accounts.order', 'ASC')
+            ->orderBy('accounts.account_type_id', 'ASC')
+            ->orderBy('accounts.name', 'ASC')
+            ->with(['accountType'])
+        ;
+        if ('' !== $query) {
+            // split query on spaces just in case:
+            $parts = explode(' ', $query);
+            foreach ($parts as $part) {
+                $search = sprintf('%%%s%%', $part);
+                $dbQuery->whereLike('name', $search);
+            }
+        }
+        if (0 !== count($types)) {
+            $dbQuery->leftJoin('account_types', 'accounts.account_type_id', '=', 'account_types.id');
+            $dbQuery->whereIn('account_types.type', $types);
+        }
+
+        return $dbQuery->take($limit)->get(['accounts.*']);
+    }
+
+    public function searchAccountIncludingInactive(string $query, array $types, int $limit): Collection
+    {
+        $dbQuery = $this->user
+            ->accounts()
             ->orderBy('accounts.order', 'ASC')
             ->orderBy('accounts.account_type_id', 'ASC')
             ->orderBy('accounts.name', 'ASC')

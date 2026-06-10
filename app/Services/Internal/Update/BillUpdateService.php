@@ -24,18 +24,14 @@ declare(strict_types=1);
 
 namespace FireflyIII\Services\Internal\Update;
 
+use FireflyIII\Events\Model\Bill\UpdatedExistingBill;
 use FireflyIII\Factory\TransactionCurrencyFactory;
 use FireflyIII\Models\Bill;
 use FireflyIII\Models\ObjectGroup;
-use FireflyIII\Models\Rule;
-use FireflyIII\Models\RuleTrigger;
-use FireflyIII\Repositories\Bill\BillRepositoryInterface;
 use FireflyIII\Repositories\ObjectGroup\CreatesObjectGroups;
 use FireflyIII\Services\Internal\Support\BillServiceTrait;
 use FireflyIII\Support\Facades\Amount;
 use FireflyIII\User;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Class BillUpdateService
@@ -50,6 +46,7 @@ class BillUpdateService
     public function update(Bill $bill, array $data): Bill
     {
         $this->user = $bill->user;
+        $oldData    = $bill->toArray();
 
         if (array_key_exists('currency_id', $data) || array_key_exists('currency_code', $data)) {
             $factory                       = app(TransactionCurrencyFactory::class);
@@ -68,13 +65,6 @@ class BillUpdateService
         $bill       = $this->updateBillProperties($bill, $data);
         $bill->save();
         $bill->refresh();
-        // old values
-        $oldData    = [
-            'name'                      => $bill->name,
-            'amount_min'                => $bill->amount_min,
-            'amount_max'                => $bill->amount_max,
-            'transaction_currency_name' => $bill->transactionCurrency->name,
-        ];
         // update note:
         if (array_key_exists('notes', $data)) {
             $this->updateNote($bill, (string) $data['notes']);
@@ -88,12 +78,6 @@ class BillUpdateService
             if ($oldOrder !== $newOrder) {
                 $this->updateOrder($bill, $oldOrder, $newOrder);
             }
-        }
-
-        // update rule actions.
-        if (array_key_exists('name', $data)) {
-            $this->updateBillActions($bill, $oldData['name'], $data['name']);
-            $this->updateBillTriggers($bill, $oldData, $data);
         }
 
         // update using name:
@@ -127,14 +111,9 @@ class BillUpdateService
             $bill->objectGroups()->sync([]);
             $bill->save();
         }
+        event(new UpdatedExistingBill($bill, $oldData));
 
         return $bill;
-    }
-
-    private function getRuleTrigger(Rule $rule, string $key): ?RuleTrigger
-    {
-        /** @var null|RuleTrigger */
-        return $rule->ruleTriggers()->where('trigger_type', $key)->first();
     }
 
     /**
@@ -181,39 +160,6 @@ class BillUpdateService
         return $bill;
     }
 
-    private function updateBillTriggers(Bill $bill, array $oldData, array $newData): void
-    {
-        Log::debug(sprintf('Now in updateBillTriggers(%d, "%s")', $bill->id, $bill->name));
-
-        /** @var BillRepositoryInterface $repository */
-        $repository = app(BillRepositoryInterface::class);
-        $repository->setUser($bill->user);
-        $rules      = $repository->getRulesForBill($bill);
-        if (0 === $rules->count()) {
-            Log::debug('Found no rules.');
-
-            return;
-        }
-        Log::debug(sprintf('Found %d rules', $rules->count()));
-        $fields     = [
-            'name'                      => 'description_contains',
-            'amount_min'                => 'amount_more',
-            'amount_max'                => 'amount_less',
-            'transaction_currency_name' => 'currency_is',
-        ];
-        foreach ($fields as $field => $ruleTriggerKey) {
-            if (!array_key_exists($field, $newData)) {
-                continue;
-            }
-            if ($oldData[$field] === $newData[$field]) {
-                Log::debug(sprintf('Field %s is unchanged ("%s"), continue.', $field, $oldData[$field]));
-
-                continue;
-            }
-            $this->updateRules($rules, $ruleTriggerKey, $oldData[$field], $newData[$field]);
-        }
-    }
-
     private function updateOrder(Bill $bill, int $oldOrder, int $newOrder): void
     {
         if ($newOrder > $oldOrder) {
@@ -237,31 +183,6 @@ class BillUpdateService
             ;
             $bill->order = $newOrder;
             $bill->save();
-        }
-    }
-
-    private function updateRules(Collection $rules, string $key, string $oldValue, string $newValue): void
-    {
-        /** @var Rule $rule */
-        foreach ($rules as $rule) {
-            $trigger = $this->getRuleTrigger($rule, $key);
-            if ($trigger instanceof RuleTrigger && $trigger->trigger_value === $oldValue) {
-                Log::debug(sprintf('Updated rule trigger #%d from value "%s" to value "%s"', $trigger->id, $oldValue, $newValue));
-                $trigger->trigger_value = $newValue;
-                $trigger->save();
-
-                continue;
-            }
-            if (
-                $trigger instanceof RuleTrigger
-                && $trigger->trigger_value !== $oldValue
-                && in_array($key, ['amount_more', 'amount_less'], true)
-                && 0 === bccomp($trigger->trigger_value, $oldValue)
-            ) {
-                Log::debug(sprintf('Updated rule trigger #%d from value "%s" to value "%s"', $trigger->id, $oldValue, $newValue));
-                $trigger->trigger_value = $newValue;
-                $trigger->save();
-            }
         }
     }
 }

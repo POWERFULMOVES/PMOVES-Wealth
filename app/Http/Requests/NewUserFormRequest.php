@@ -38,6 +38,8 @@ class NewUserFormRequest extends FormRequest
     use ChecksLogin;
     use ConvertsDataTypes;
 
+    protected array $acceptedRoles = [];
+
     /**
      * Rules for this request.
      */
@@ -45,7 +47,7 @@ class NewUserFormRequest extends FormRequest
     {
         // fixed
         return [
-            'bank_name'                            => 'required|min:1|max:255',
+            'bank_name'                            => ['required', 'min:1', 'max:255'],
             'bank_balance'                         => ['required', new IsValidAmount()],
             'savings_balance'                      => ['nullable', new IsValidAmount()],
             'credit_card_limit'                    => ['nullable', new IsValidAmount()],

@@ -48,7 +48,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 /**
  * Class ShowController
  */
-class ShowController extends Controller
+final class ShowController extends Controller
 {
     use PeriodOverview;
 
@@ -77,7 +77,7 @@ class ShowController extends Controller
     /**
      * Show an account.
      *
-     * @return Factory|Redirector|RedirectResponse|View
+     * @return Factory|RedirectResponse|View
      *
      * @throws ContainerExceptionInterface
      * @throws FireflyException
@@ -121,7 +121,7 @@ class ShowController extends Controller
         $currency         = $accountCurrency ?? $this->primaryCurrency;
         $fStart           = $start->isoFormat($this->monthAndDayFormat);
         $fEnd             = $end->isoFormat($this->monthAndDayFormat);
-        $subTitle         = (string) trans('firefly.journals_in_period_for_account', ['name'  => $account->name, 'start' => $fStart, 'end'   => $fEnd]);
+        $subTitle         = (string) trans('firefly.journals_in_period_for_account', ['name' => $account->name, 'start' => $fStart, 'end' => $fEnd]);
         $chartUrl         = route('chart.account.period', [$account->id, $start->format('Y-m-d'), $end->format('Y-m-d')]);
         $firstTransaction = $this->repository->oldestJournalDate($account) ?? $start;
 
@@ -197,7 +197,7 @@ class ShowController extends Controller
     /**
      * Show an account.
      *
-     * @return Factory|Redirector|RedirectResponse|View
+     * @return Factory|RedirectResponse|View
      *
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
@@ -219,7 +219,7 @@ class ShowController extends Controller
         $page         = (int) $request->get('page');
         $pageSize     = (int) Preferences::get('listPageSize', 50)->data;
         $currency     = $this->repository->getAccountCurrency($account) ?? $this->primaryCurrency;
-        $subTitle     = (string) trans('firefly.all_journals_for_account', ['name'     => $account->name]);
+        $subTitle     = (string) trans('firefly.all_journals_for_account', ['name' => $account->name]);
         $periods      = new Collection();
 
         $end->endOfDay();

@@ -96,12 +96,7 @@ class AccountFactory
         $type = AccountType::whereType($accountType)->first();
 
         /** @var null|Account */
-        return $this->user
-            ->accounts()
-            ->where('account_type_id', $type->id)
-            ->where('name', $accountName)
-            ->first()
-        ;
+        return $this->user->accounts()->where('account_type_id', $type->id)->where('name', $accountName)->first();
     }
 
     /**
@@ -117,12 +112,7 @@ class AccountFactory
         }
 
         /** @var null|Account $return */
-        $return = $this->user
-            ->accounts
-            ->where('account_type_id', $type->id)
-            ->where('name', $accountName)
-            ->first()
-        ;
+        $return = $this->user->accounts->where('account_type_id', $type->id)->where('name', $accountName)->first();
 
         if (null === $return) {
             Log::debug('Found nothing. Will create a new one.');
@@ -167,7 +157,7 @@ class AccountFactory
         if (null === $result) {
             $types = config(sprintf('firefly.accountTypeByIdentifier.%s', $accountTypeName)) ?? [];
             if (0 !== count($types)) {
-                $result = AccountType::whereIn('type', $types)->first();
+                $result = AccountType::query()->whereIn('type', $types)->first();
             }
         }
         if (null === $result) {
@@ -219,7 +209,7 @@ class AccountFactory
             'user_group_id'   => $this->user->user_group_id,
             'account_type_id' => $type->id,
             'name'            => $data['name'],
-            'order'           => 25000,
+            'order'           => 25_000,
             'virtual_balance' => $virtualBalance,
             'active'          => $active,
             'iban'            => $data['iban'],

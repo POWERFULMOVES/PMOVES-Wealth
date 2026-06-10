@@ -48,6 +48,11 @@ class AvailableBudgetCalculator
     private AvailableBudgetRepositoryInterface $abRepository;
     private BudgetLimitRepositoryInterface $blRepository;
 
+    public function __construct()
+    {
+        Log::debug('Created new AvailableBudgetCalculator');
+    }
+
     public function recalculateByRange(): void
     {
         Log::debug(sprintf('Now in recalculateByRange(%s, %s)', $this->start->format('Y-m-d'), $this->start->format('Y-m-d')));
@@ -100,12 +105,13 @@ class AvailableBudgetCalculator
         $this->user         = $user;
         $this->abRepository = app(AvailableBudgetRepositoryInterface::class);
         $this->blRepository = app(BudgetLimitRepositoryInterface::class);
-        $this->abRepository->setUser($user);
-        $this->blRepository->setUser($user);
+        $this->abRepository->setUser($this->user);
+        $this->blRepository->setUser($this->user);
 
-        $viewRange          = Preferences::getForUser($user, 'viewRange', '1M')->data;
+        $viewRange          = Preferences::getForUser($this->user, 'viewRange', '1M')->data;
         $viewRange          = !is_string($viewRange) ? '1M' : $viewRange;
         $this->viewRange    = $this->correctViewRange($viewRange);
+        $this->abRepository->cleanup();
     }
 
     private function correctViewRange(string $viewRange): string
@@ -131,33 +137,41 @@ class AvailableBudgetCalculator
 
     private function refreshAvailableBudget(Carbon $start): void
     {
-        $end             = Navigation::endOfPeriod($start, $this->viewRange);
+        $end              = Navigation::endOfPeriod($start, $this->viewRange);
         Log::debug(sprintf('refreshAvailableBudget(%s), end is %s', $start->format('Y-m-d'), $end->format('Y-m-d')));
-        $availableBudget = $this->abRepository->find($this->currency, $start, $end);
 
-        if (null !== $availableBudget) {
-            Log::debug('Found available budget for this period, will update it.');
-            $this->abRepository->recalculateAmount($availableBudget);
+        if ($end->lt($start)) {
+            Log::error(sprintf('%s is less than %s, stop.', $start->format('Y-m-d'), $end->format('Y-m-d')));
 
             return;
+        }
+
+        $availableBudget  = $this->abRepository->find($this->currency, $start, $end);
+        $availableBudgets = $this->abRepository->findInRange($this->currency, $start, $end);
+
+        foreach ($availableBudgets as $item) {
+            Log::debug(sprintf(
+                'findInRange found available budget #%d (%s - %s), will update it.',
+                $item->id,
+                $item->start_date->format('Y-m-d'),
+                $item->end_date->format('Y-m-d')
+            ));
+            $this->abRepository->recalculateAmount($item);
         }
         if (!$this->create) {
             Log::debug('Can stop here. have not been asked to create an available budget.');
 
             return;
         }
-        if ($end->lt($start)) {
-            Log::error(sprintf('%s is less than %s, stop.', $start->format('Y-m-d'), $end->format('Y-m-d')));
-
-            return;
+        if (null === $availableBudget) {
+            Log::debug(sprintf('Will create new available budget for period %s to %s', $start->format('Y-m-d'), $end->format('Y-m-d')));
+            $availableBudget = $this->abRepository->store([
+                'start'       => $start,
+                'end'         => $end,
+                'currency_id' => $this->currency->id,
+                'amount'      => '1',
+            ]);
+            $this->abRepository->recalculateAmount($availableBudget);
         }
-        Log::debug(sprintf('Will create new available budget for period %s to %s', $start->format('Y-m-d'), $end->format('Y-m-d')));
-        $availableBudget = $this->abRepository->store([
-            'start'       => $start,
-            'end'         => $end,
-            'currency_id' => $this->currency->id,
-            'amount'      => '1',
-        ]);
-        $this->abRepository->recalculateAmount($availableBudget);
     }
 }

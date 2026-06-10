@@ -33,14 +33,13 @@ use FireflyIII\Support\Facades\Preferences;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 /**
  * Class EditController
  */
-class EditController extends Controller
+final class EditController extends Controller
 {
     private AttachmentHelperInterface $attachments;
     private CategoryRepositoryInterface $repository;
@@ -79,13 +78,13 @@ class EditController extends Controller
 
         $preFilled = ['notes' => $request->old('notes') ?? $this->repository->getNoteText($category)];
 
-        return view('categories.edit', ['category'  => $category, 'subTitle'  => $subTitle, 'preFilled' => $preFilled]);
+        return view('categories.edit', ['category' => $category, 'subTitle' => $subTitle, 'preFilled' => $preFilled]);
     }
 
     /**
      * Update category.
      */
-    public function update(CategoryFormRequest $request, Category $category): Redirector|RedirectResponse
+    public function update(CategoryFormRequest $request, Category $category): RedirectResponse
     {
         $data     = $request->getCategoryData();
         $this->repository->update($category, $data);

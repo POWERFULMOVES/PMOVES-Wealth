@@ -68,7 +68,7 @@ class ChecksForNewVersion implements ShouldQueue
         $now           = Carbon::now()->getTimestamp();
         $diff          = $now - $lastCheckTime->data;
         Log::debug(sprintf('Last check time is %d, current time is %d, difference is %d', $lastCheckTime->data, $now, $diff));
-        if ($diff < 604800) {
+        if ($diff < 604_800) {
             Log::debug(sprintf('Checked for updates less than a week ago (on %s).', Carbon::createFromTimestamp($lastCheckTime->data)->format('Y-m-d H:i:s')));
 
             return;
@@ -76,8 +76,27 @@ class ChecksForNewVersion implements ShouldQueue
         // last check time was more than a week ago.
         Log::debug('Have not checked for a new version in a week!');
         $release       = $this->getLatestRelease();
+        $level         = 'info';
+        $message       = trans('firefly.no_new_release_available');
+        if ('' !== $release->getError()) {
+            $level   = 'error';
+            $message = $release->getError();
+        }
+        if ($release->isNewVersionAvailable()) {
+            // if running develop, slightly different message.
+            if (str_contains(config('firefly.version'), 'develop')) {
+                $message = trans('firefly.update_current_dev_older', ['version' => config('firefly.version'), 'new_version' => $release->getNewVersion()]);
+            }
+            if (!str_contains(config('firefly.version'), 'develop')) {
+                $message = trans('firefly.update_new_version_alert', [
+                    'your_version' => config('firefly.version'),
+                    'new_version'  => $release->getNewVersion(),
+                    'date'         => $release->getPublishedAt()->format('Y-m-d H:i:s'),
+                ]);
+            }
+        }
 
-        session()->flash($release['level'], $release['message']);
+        session()->flash($level, $message);
         FireflyConfig::set('last_update_check', Carbon::now()->getTimestamp());
     }
 
@@ -102,7 +121,7 @@ class ChecksForNewVersion implements ShouldQueue
         $now           = Carbon::now()->getTimestamp();
         $diff          = $now - $lastCheckTime->data;
         Log::debug(sprintf('Last warning time is %d, current time is %d, difference is %d', $lastCheckTime->data, $now, $diff));
-        if ($diff < (604800 * 4)) {
+        if ($diff < (604_800 * 4)) {
             Log::debug(sprintf(
                 'Warned about updates less than four weeks ago (on %s).',
                 Carbon::createFromTimestamp($lastCheckTime->data)->format('Y-m-d H:i:s')

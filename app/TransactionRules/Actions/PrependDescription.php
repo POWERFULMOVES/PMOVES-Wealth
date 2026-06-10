@@ -45,15 +45,11 @@ class PrependDescription implements ActionInterface
     {
         $before = $journal['description'];
         $after  = sprintf('%s%s', $this->action->getValue($journal), $journal['description']);
-        DB::table('transaction_journals')
-            ->where('id', $journal['transaction_journal_id'])
-            ->limit(1)
-            ->update(['description' => $after])
-        ;
+        DB::table('transaction_journals')->where('id', $journal['transaction_journal_id'])->limit(1)->update(['description' => $after]);
 
         // journal
         /** @var TransactionJournal $object */
-        $object = TransactionJournal::where('user_id', $journal['user_id'])->find($journal['transaction_journal_id']);
+        $object = TransactionJournal::query()->where('user_id', $journal['user_id'])->find($journal['transaction_journal_id']);
 
         // audit log
         event(new TransactionGroupRequestsAuditLogEntry($this->action->rule, $object, 'update_description', $before, $after));

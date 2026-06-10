@@ -45,9 +45,10 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 /**
  * Class UpdateController
  */
-class UpdateController extends Controller
+final class UpdateController extends Controller
 {
     private TransactionGroupRepositoryInterface $groupRepository;
+    protected array $acceptedRoles = [];
 
     /**
      * TransactionController constructor.
@@ -74,8 +75,8 @@ class UpdateController extends Controller
      */
     public function update(UpdateRequest $request, TransactionGroup $transactionGroup): JsonResponse
     {
-        Log::debug('Now in update routine for transaction group');
         $data                     = $request->getAll();
+        Log::debug('Now in update routine for transaction group', $data);
         $oldHash                  = $this->groupRepository->getCompareHash($transactionGroup);
         $objects                  = TransactionGroupEventObjects::collectFromTransactionGroup($transactionGroup);
         $transactionGroup         = $this->groupRepository->update($transactionGroup, $data);
@@ -92,6 +93,7 @@ class UpdateController extends Controller
         $flags->applyRules        = $applyRules;
         $flags->fireWebhooks      = $fireWebhooks;
         $flags->recalculateCredit = $runRecalculations;
+        $flags->batchSubmission   = $data['batch_submission'] ?? false;
         event(new UpdatedSingleTransactionGroup($flags, $objects));
         event(new WebhookMessagesRequestSending());
 

@@ -28,6 +28,7 @@ use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Rules\IsBoolean;
 use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
+use FireflyIII\User;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -38,20 +39,30 @@ class UpdateRequest extends FormRequest
     use ChecksLogin;
     use ConvertsDataTypes;
 
+    protected array $acceptedRoles = [];
+
     /**
      * Get all data from the request.
      */
     public function getAll(): array
     {
-        // return nothing that isn't explicitly in the array:
-        $fields = [
-            'name'           => ['name', 'convertString'],
-            'code'           => ['code', 'convertString'],
-            'symbol'         => ['symbol', 'convertString'],
-            'decimal_places' => ['decimal_places', 'convertInteger'],
-            'default'        => ['default', 'boolean'],
-            'enabled'        => ['enabled', 'boolean'],
+        /** @var User $user */
+        $user    = auth()->user();
+        $isAdmin = $user->hasRole('owner');
+
+        $fields  = [
+            'enabled' => ['enabled', 'boolean'],
         ];
+        if ($isAdmin) {
+            $fields = [
+                'name'           => ['name', 'convertString'],
+                'code'           => ['code', 'convertString'],
+                'symbol'         => ['symbol', 'convertString'],
+                'decimal_places' => ['decimal_places', 'convertInteger'],
+                'default'        => ['default', 'boolean'],
+                'enabled'        => ['enabled', 'boolean'],
+            ];
+        }
 
         return $this->getAllData($fields);
     }
@@ -61,14 +72,17 @@ class UpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        /** @var TransactionCurrency $currency */
+        /** @var string|TransactionCurrency $currency */
         $currency = $this->route()->parameter('currency_code');
+        if (is_string($currency)) {
+            $currency = TransactionCurrency::whereCode($currency)->first();
+        }
 
         return [
             'name'           => sprintf('min:1|max:255|unique:transaction_currencies,name,%d', $currency->id),
             'code'           => sprintf('min:3|max:32|unique:transaction_currencies,code,%d', $currency->id),
             'symbol'         => sprintf('min:1|max:32|unique:transaction_currencies,symbol,%d', $currency->id),
-            'decimal_places' => 'numeric|min:0|max:12',
+            'decimal_places' => ['numeric', 'min:0', 'max:12'],
             'enabled'        => [new IsBoolean()],
             'default'        => [new IsBoolean()],
         ];

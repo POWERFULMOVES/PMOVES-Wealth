@@ -36,6 +36,7 @@ use FireflyIII\Support\Facades\Navigation;
 use FireflyIII\Support\Facades\Steam;
 use FireflyIII\Support\Http\Controllers\BasicDataSupport;
 use FireflyIII\Support\Http\Controllers\ChartGeneration;
+use FireflyIII\Support\Http\Controllers\ResolvesJournalAmountAndCurrency;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -43,10 +44,11 @@ use Illuminate\Support\Facades\Log;
 /**
  * Class ReportController.
  */
-class ReportController extends Controller
+final class ReportController extends Controller
 {
     use BasicDataSupport;
     use ChartGeneration;
+    use ResolvesJournalAmountAndCurrency;
 
     protected GeneratorInterface $generator;
 
@@ -147,10 +149,10 @@ class ReportController extends Controller
         $cache->addProperty($start);
         $cache->addProperty($accounts);
         $cache->addProperty($end);
+        $cache->addProperty($this->convertToPrimary);
         if ($cache->has()) {
-            return response()->json($cache->get());
+            //             return response()->json($cache->get());
         }
-
         Log::debug('Going to do operations for accounts ', $accounts->pluck('id')->toArray());
         Log::debug(sprintf('Period: %s to %s', $start->toW3cString(), $end->toW3cString()));
         $format         = Navigation::preferredCarbonFormat($start, $end);
@@ -176,18 +178,24 @@ class ReportController extends Controller
         /** @var array $journal */
         foreach ($journals as $journal) {
             $period                           = $journal['date']->format($format);
-            $currencyId                       = (int) $journal['currency_id'];
+            $journalData                      = $this->resolveJournalAmountAndCurrency($journal, $journal);
+            $currencyId                       = $journalData['currency_id'];
+            $currencySymbol                   = $journalData['currency_symbol'];
+            $currencyCode                     = $journalData['currency_code'];
+            $currencyName                     = $journalData['currency_name'];
+            $currencyDecimalPlaces            = $journalData['currency_decimal_places'];
+            $amount                           = $journalData['amount'];
+
             $data[$currencyId]          ??= [
                 'currency_id'             => $currencyId,
-                'currency_symbol'         => $journal['currency_symbol'],
-                'currency_code'           => $journal['currency_code'],
-                'currency_name'           => $journal['currency_name'],
-                'currency_decimal_places' => (int) $journal['currency_decimal_places'],
+                'currency_symbol'         => $currencySymbol,
+                'currency_code'           => $currencyCode,
+                'currency_name'           => $currencyName,
+                'currency_decimal_places' => $currencyDecimalPlaces,
             ];
-            $data[$currencyId][$period] ??= ['period' => $period, 'spent'  => '0', 'earned' => '0'];
+            $data[$currencyId][$period] ??= ['period' => $period, 'spent' => '0', 'earned' => '0'];
             // in our outgoing?
             $key                              = 'spent';
-            $amount                           = Steam::positive($journal['amount']);
 
             // deposit = incoming
             // transfer or reconcile or opening balance, and these accounts are the destination.
@@ -210,9 +218,9 @@ class ReportController extends Controller
 
         /** @var array $currency */
         foreach ($data as $currency) {
-            Log::debug(sprintf('Now processing currency "%s"', $currency['currency_name']));
+            Log::debug(sprintf('Now processing currency %s', $currency['currency_code']));
             $income       = [
-                'label'           => (string) trans('firefly.box_earned_in_currency', ['currency'           => $currency['currency_name']]),
+                'label'           => (string) trans('firefly.box_earned_in_currency', ['currency' => $currency['currency_name']]),
                 'type'            => 'bar',
                 'backgroundColor' => 'rgba(0, 141, 76, 0.5)', // green
                 'currency_id'     => $currency['currency_id'],
@@ -221,7 +229,7 @@ class ReportController extends Controller
                 'entries'         => [],
             ];
             $expense      = [
-                'label'           => (string) trans('firefly.box_spent_in_currency', ['currency'           => $currency['currency_name']]),
+                'label'           => (string) trans('firefly.box_spent_in_currency', ['currency' => $currency['currency_name']]),
                 'type'            => 'bar',
                 'backgroundColor' => 'rgba(219, 68, 55, 0.5)', // red
                 'currency_id'     => $currency['currency_id'],
@@ -238,7 +246,7 @@ class ReportController extends Controller
             if ('1Y' === $preferredRange) {
                 $currentEnd = Navigation::endOfPeriod($currentEnd, $preferredRange);
             }
-            Log::debug('Start of sub-loop');
+            Log::debug(sprintf('Start of sub-loop, current end is %s', $currentEnd->toW3cString()));
             while ($currentStart <= $currentEnd) {
                 Log::debug(sprintf('Current start: %s', $currentStart->toW3cString()));
                 $key          = $currentStart->format($format);

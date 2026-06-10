@@ -8,11 +8,11 @@
         "postinstall": "patch-package --error-on-fail"
     },
     "devDependencies": {
-        "axios": "^1.16.0",
-        "laravel-vite-plugin": "^2",
+        "axios": "^1.15.0",
+        "laravel-vite-plugin": "^3",
         "patch-package": "^8",
         "sass": "^1",
-        "vite": "^7.3.2",
+        "vite": "=8.0.13",
         "vite-plugin-manifest-sri": "^0.2.0"
     },
     "dependencies": {
@@ -26,10 +26,10 @@
         "chart.js": "^4",
         "chartjs-adapter-date-fns": "^3.0.0",
         "chartjs-chart-sankey": "^0.14.0",
-        "date-fns": "^4.0.0",
-        "i18next": "^25.0.1",
+        "date-fns": "4.1.0",
+        "i18next": "^26.0.3",
         "i18next-chained-backend": "^5.0.0",
-        "i18next-http-backend": "^3.0.5",
+        "i18next-http-backend": "^3.0.1",
         "i18next-localstorage-backend": "^4.2.0",
         "leaflet": "^1.9.4",
         "store": "^2.0.12"

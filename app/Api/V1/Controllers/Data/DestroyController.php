@@ -54,7 +54,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Class DestroyController
  */
-class DestroyController extends Controller
+final class DestroyController extends Controller
 {
     private bool $unused;
 
@@ -185,6 +185,8 @@ class DestroyController extends Controller
         /** @var BudgetRepositoryInterface $budgetRepository */
         $budgetRepository = app(BudgetRepositoryInterface::class);
         $budgetRepository->destroyAll();
+
+        $abRepository->cleanup();
     }
 
     private function destroyCategories(): void

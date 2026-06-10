@@ -213,9 +213,9 @@ class CreateRecurringTransactions implements ShouldQueue
         /** @var RecurrenceTransaction $transaction */
         foreach ($transactions as $index => $transaction) {
             $single   = [
-                'type'                  => null === $transaction?->transactionType?->type
+                'type'                  => null === $transaction->transactionType?->type
                     ? strtolower((string) $recurrence->transactionType->type)
-                    : strtolower($transaction->transactionType->type), // @phpstan-ignore-line
+                    : strtolower($transaction->transactionType->type),
                 'date'                  => $date,
                 'user'                  => $recurrence->user,
                 'user_group'            => $recurrence->user->userGroup,
@@ -238,7 +238,7 @@ class CreateRecurringTransactions implements ShouldQueue
                 'identifier'            => $index,
                 'recurrence_id'         => $recurrence->id,
                 'order'                 => $index,
-                'notes'                 => (string) trans('firefly.created_from_recurrence', ['id'    => $recurrence->id, 'title' => $recurrence->title]),
+                'notes'                 => (string) trans('firefly.created_from_recurrence', ['id' => $recurrence->id, 'title' => $recurrence->title]),
                 'tags'                  => $this->repository->getTags($transaction),
                 'piggy_bank_id'         => $this->repository->getPiggyBank($transaction),
                 'piggy_bank_name'       => null,

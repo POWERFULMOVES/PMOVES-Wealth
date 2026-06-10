@@ -33,14 +33,13 @@ use FireflyIII\Support\Facades\Preferences;
 use FireflyIII\Support\Facades\Steam;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 /**
  * Class EditController
  */
-class EditController extends Controller
+final class EditController extends Controller
 {
     private AttachmentHelperInterface $attachments;
     private PiggyBankRepositoryInterface $piggyRepos;
@@ -70,7 +69,7 @@ class EditController extends Controller
      */
     public function edit(PiggyBank $piggyBank): Factory|\Illuminate\Contracts\View\View
     {
-        $subTitle     = (string) trans('firefly.update_piggy_title', ['name'     => $piggyBank->name]);
+        $subTitle     = (string) trans('firefly.update_piggy_title', ['name' => $piggyBank->name]);
         $subTitleIcon = 'fa-pencil';
         $note         = $piggyBank->notes()->first();
         // Flash some data to fill the form.
@@ -120,7 +119,7 @@ class EditController extends Controller
     /**
      * Update a piggy bank.
      */
-    public function update(PiggyBankUpdateRequest $request, PiggyBank $piggyBank): Redirector|RedirectResponse
+    public function update(PiggyBankUpdateRequest $request, PiggyBank $piggyBank): RedirectResponse
     {
         $data      = $request->getPiggyBankData();
         $piggyBank = $this->piggyRepos->update($piggyBank, $data);

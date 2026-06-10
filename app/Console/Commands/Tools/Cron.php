@@ -57,12 +57,13 @@ class Cron extends Command
 
     public function handle(): int
     {
-        $doAll = !$this->option('download-cer')
-        && !$this->option('create-recurring')
-        && !$this->option('create-auto-budgets')
-        && !$this->option('send-subscription-warnings')
-        && !$this->option('check-version')
-        && !$this->option('send-webhook-messages');
+        $doAll
+               = !$this->option('download-cer')
+            && !$this->option('create-recurring')
+            && !$this->option('create-auto-budgets')
+            && !$this->option('send-subscription-warnings')
+            && !$this->option('check-version')
+            && !$this->option('send-webhook-messages');
         $date  = null;
 
         try {
@@ -70,7 +71,7 @@ class Cron extends Command
         } catch (InvalidArgumentException $e) {
             $this->friendlyError(sprintf('"%s" is not a valid date', $this->option('date')));
         }
-        $force = (bool) $this->option('force'); // @phpstan-ignore-line
+        $force = (bool) $this->option('force');
 
         // Fire exchange rates cron job.
         if (true === FireflyConfig::get('enable_external_rates', config('cer.download_enabled'))->data && ($doAll || $this->option('download-cer'))) {

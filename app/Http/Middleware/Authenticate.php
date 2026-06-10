@@ -26,13 +26,11 @@ namespace FireflyIII\Http\Middleware;
 
 use Closure;
 use FireflyIII\Exceptions\FireflyException;
-use FireflyIII\Exceptions\Handler;
 use FireflyIII\User;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\Factory as Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use League\OAuth2\Server\Exception\OAuthServerException;
 
 /**
  * Class Authenticate
@@ -42,10 +40,9 @@ class Authenticate
     /**
      * Create a new middleware instance.
      */
-    public function __construct(
-        /**
-         * The authentication factory instance.
-         */
+    public function __construct(/**
+     * The authentication factory instance.
+     */
         protected Auth $auth
     ) {}
 
@@ -82,43 +79,49 @@ class Authenticate
     protected function authenticate($request, array $guards)
     {
         if (0 === count($guards)) {
-            // go for default guard:
-            // @noinspection PhpUndefinedMethodInspection
-            if ($this->auth->check()) {
-                // do an extra check on user object.
-                /** @noinspection PhpUndefinedMethodInspection */
-
-                /** @var User $user */
-                $user = $this->auth->authenticate();
-                $this->validateBlockedUser($user, $guards);
-            }
-
-            // @noinspection PhpUndefinedMethodInspection
-            return $this->auth->authenticate();
-        }
-
-        foreach ($guards as $guard) {
-            if ('api' !== $guard) {
-                $this->auth->guard($guard)->authenticate();
-            }
-            $result = $this->auth->guard($guard)->check();
-            if ($result) {
-                $user = $this->auth->guard($guard)->user();
+            Log::debug('in Authenticate::authenticate() with zero guards.');
+            // There are no guards defined, go for the default guard:
+            if (auth()->check()) {
+                Log::debug('User is authenticated.');
+                $user = auth()->user();
                 $this->validateBlockedUser($user, $guards);
 
-                // According to PHPstan the method returns void, but we'll see.
-                return $this->auth->shouldUse($guard); // @phpstan-ignore-line
+                return;
+            }
+            // @noinspection PhpUndefinedMethodInspection
+            $this->auth->authenticate();
+            if (!$this->auth->check()) {
+                throw new AuthenticationException('The user is not logged in but must be.', $guards);
             }
         }
 
+        throw new FireflyException('This point is generally unreachable.');
+
+        //        exit('five');
+        //        foreach ($guards as $guard) {
+        //            exit('six');
+        //            if ('api' !== $guard) {
+        //                $this->auth->guard($guard)->authenticate();
+        //            }
+        //            $result = $this->auth->guard($guard)->check();
+        //            if ($result) {
+        //                $user = $this->auth->guard($guard)->user();
+        //                $this->validateBlockedUser($user, $guards);
+        //
+        //                // According to PHPstan the method returns void, but we'll see.
+        //                return $this->auth->shouldUse($guard);
+        //            }
+        //        }
+        //
+        //        exit('seven');
         // this is a massive hack, but if the handler has the oauth exception
         // at this point we can report its error instead of a generic one.
-        $message = 'Unauthenticated.';
-        if (Handler::$lastError instanceof OAuthServerException) {
-            $message = Handler::$lastError->getHint();
-        }
-
-        throw new AuthenticationException($message, $guards);
+        //        $message = 'Unauthenticated.';
+        //        if (Handler::$lastError instanceof OAuthServerException) {
+        //            $message = Handler::$lastError->getHint();
+        //        }
+        //
+        //        throw new AuthenticationException($message, $guards);
     }
 
     /**
@@ -140,8 +143,8 @@ class Authenticate
             // @noinspection PhpUndefinedMethodInspection
             $this->auth->logout();
 
-            // @phpstan-ignore-line (thinks function is undefined)
             throw new AuthenticationException('Blocked account.', $guards);
         }
+        Log::debug(sprintf('User #%d is not blocked.', $user->id));
     }
 }

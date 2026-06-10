@@ -41,7 +41,11 @@ class UserGroupAccount implements BinderInterface
         if (auth()->check()) {
             /** @var User $user */
             $user    = auth()->user();
-            $account = Account::where('id', (int) $value)->where('user_group_id', $user->user_group_id)->first();
+            $account = Account::query()
+                ->where('id', (int) $value)
+                ->where('user_group_id', $user->user_group_id)
+                ->first()
+            ;
             if (null !== $account) {
                 return $account;
             }

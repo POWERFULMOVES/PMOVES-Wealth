@@ -40,7 +40,7 @@ use Illuminate\View\View;
 /**
  * Class CreateController
  */
-class CreateController extends Controller
+final class CreateController extends Controller
 {
     private AttachmentHelperInterface $attachments;
     private BudgetRepositoryInterface $repository;
@@ -100,7 +100,7 @@ class CreateController extends Controller
         $request->session()->forget('budgets.create.fromStore');
         $subTitle          = (string) trans('firefly.create_new_budget');
 
-        return view('budgets.create', ['subTitle'          => $subTitle, 'autoBudgetTypes'   => $autoBudgetTypes, 'autoBudgetPeriods' => $autoBudgetPeriods]);
+        return view('budgets.create', ['subTitle' => $subTitle, 'autoBudgetTypes' => $autoBudgetTypes, 'autoBudgetPeriods' => $autoBudgetPeriods]);
     }
 
     /**

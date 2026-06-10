@@ -25,19 +25,68 @@ declare(strict_types=1);
 namespace FireflyIII\Api\V1\Controllers\Search;
 
 use FireflyIII\Api\V1\Controllers\Controller;
+use FireflyIII\Api\V1\Requests\Search\CountRequest;
 use FireflyIII\Api\V1\Requests\Search\TransactionSearchRequest;
+use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
 use FireflyIII\Support\JsonApi\Enrichments\TransactionGroupEnrichment;
 use FireflyIII\Support\Search\SearchInterface;
 use FireflyIII\Transformers\TransactionGroupTransformer;
+use FireflyIII\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use League\Fractal\Pagination\IlluminatePaginatorAdapter;
 use League\Fractal\Resource\Collection;
 
 /**
  * Class TransactionController
  */
-class TransactionController extends Controller
+final class TransactionController extends Controller
 {
+    private JournalRepositoryInterface $repository;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->middleware(function ($request, $next) {
+            /** @var User $admin */
+            $admin            = auth()->user();
+
+            $this->repository = app(JournalRepositoryInterface::class);
+            $this->repository->setUser($admin);
+
+            return $next($request);
+        });
+    }
+
+    public function count(CountRequest $request, SearchInterface $searcher): JsonResponse
+    {
+        $count          = 0;
+        $includeDeleted = $request->attributes->get('include_deleted', false);
+        $externalId     = (string) $request->attributes->get('external_identifier');
+        $internalRef    = (string) $request->attributes->get('internal_reference');
+        $notes          = (string) $request->attributes->get('notes');
+        $description    = (string) $request->attributes->get('description');
+        Log::debug(sprintf('Include deleted? %s', var_export(value: $includeDeleted, return: true)));
+        if ('' !== $externalId) {
+            $count += $this->repository->countByMeta('external_id', $externalId, $includeDeleted);
+            Log::debug(sprintf('Search for transactions with external_identifier "%s", count is now %d', $externalId, $count));
+        }
+        if ('' !== $internalRef) {
+            $count += $this->repository->countByMeta('internal_reference', $internalRef, $includeDeleted);
+            Log::debug(sprintf('Search for transactions with internal_reference "%s", count is now %d', $internalRef, $count));
+        }
+        if ('' !== $notes) {
+            $count += $this->repository->countByNotes($notes, $includeDeleted);
+            Log::debug(sprintf('Search for transactions with notes LIKE "%s", count is now %d', $notes, $count));
+        }
+        if ('' !== $description) {
+            $count += $this->repository->countByDescription($description, $includeDeleted);
+            Log::debug(sprintf('Search for transactions with description "%s", count is now %d', $description, $count));
+        }
+
+        return response()->json(['count' => $count]);
+    }
+
     /**
      * This endpoint is documented at:
      * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/search/searchTransactions

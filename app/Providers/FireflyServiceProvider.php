@@ -53,7 +53,7 @@ use FireflyIII\Repositories\UserGroup\UserGroupRepository;
 use FireflyIII\Repositories\UserGroup\UserGroupRepositoryInterface;
 use FireflyIII\Repositories\Webhook\WebhookRepository;
 use FireflyIII\Repositories\Webhook\WebhookRepositoryInterface;
-use FireflyIII\Services\FireflyIIIOrg\Update\UpdateRequest;
+use FireflyIII\Services\FireflyIIIOrg\Update\GitHubUpdateRequest;
 use FireflyIII\Services\FireflyIIIOrg\Update\UpdateRequestInterface;
 use FireflyIII\Services\Password\PwndVerifierV2;
 use FireflyIII\Services\Password\Verifier;
@@ -70,6 +70,7 @@ use FireflyIII\Support\Form\RuleForm;
 use FireflyIII\Support\Navigation;
 use FireflyIII\Support\Preferences;
 use FireflyIII\Support\Steam;
+use FireflyIII\TransactionRules\Engine\CustomExpressionLanguage;
 use FireflyIII\TransactionRules\Engine\RuleEngineInterface;
 use FireflyIII\TransactionRules\Engine\SearchRuleEngine;
 use FireflyIII\TransactionRules\Expressions\ActionExpressionLanguageProvider;
@@ -132,7 +133,7 @@ class FireflyServiceProvider extends ServiceProvider
         $this->app->bind(static function (Application $app): ObjectGroupRepositoryInterface {
             /** @var ObjectGroupRepository $repository */
             $repository = app(ObjectGroupRepository::class);
-            if ($app->auth->check()) { // @phpstan-ignore-line (phpstan does not understand the reference to auth)
+            if ($app->auth->check()) {
                 $repository->setUser(auth()->user());
             }
 
@@ -142,7 +143,7 @@ class FireflyServiceProvider extends ServiceProvider
         $this->app->bind(static function (Application $app): PeriodStatisticRepositoryInterface {
             /** @var PeriodStatisticRepository $repository */
             $repository = app(PeriodStatisticRepository::class);
-            if ($app->auth->check()) { // @phpstan-ignore-line (phpstan does not understand the reference to auth)
+            if ($app->auth->check()) {
                 $repository->setUser(auth()->user());
             }
 
@@ -152,7 +153,7 @@ class FireflyServiceProvider extends ServiceProvider
         $this->app->bind(static function (Application $app): WebhookRepositoryInterface {
             /** @var WebhookRepository $repository */
             $repository = app(WebhookRepository::class);
-            if ($app->auth->check()) { // @phpstan-ignore-line (phpstan does not understand the reference to auth)
+            if ($app->auth->check()) {
                 $repository->setUser(auth()->user());
             }
 
@@ -161,7 +162,7 @@ class FireflyServiceProvider extends ServiceProvider
 
         // rule expression language
         $this->app->singleton(static function (): ExpressionLanguage {
-            $expressionLanguage = new ExpressionLanguage();
+            $expressionLanguage = new CustomExpressionLanguage();
             $expressionLanguage->registerProvider(new ActionExpressionLanguageProvider());
 
             return $expressionLanguage;
@@ -170,7 +171,7 @@ class FireflyServiceProvider extends ServiceProvider
         $this->app->bind(static function (Application $app): RuleEngineInterface {
             /** @var SearchRuleEngine $engine */
             $engine = app(SearchRuleEngine::class);
-            if ($app->auth->check()) { // @phpstan-ignore-line (phpstan does not understand the reference to auth)
+            if ($app->auth->check()) {
                 $engine->setUser(auth()->user());
             }
 
@@ -180,7 +181,7 @@ class FireflyServiceProvider extends ServiceProvider
         $this->app->bind(static function (Application $app): UserGroupRepositoryInterface {
             /** @var UserGroupRepository $repository */
             $repository = app(UserGroupRepository::class);
-            if ($app->auth->check()) { // @phpstan-ignore-line (phpstan does not understand the reference to auth)
+            if ($app->auth->check()) {
                 $repository->setUser(auth()->user());
             }
 
@@ -191,7 +192,8 @@ class FireflyServiceProvider extends ServiceProvider
         $this->app->bind(PopupReportInterface::class, PopupReport::class);
         $this->app->bind(ReportHelperInterface::class, ReportHelper::class);
         $this->app->bind(FiscalHelperInterface::class, FiscalHelper::class);
-        $this->app->bind(UpdateRequestInterface::class, UpdateRequest::class);
+        // $this->app->bind(UpdateRequestInterface::class, UpdateRequest::class);
+        $this->app->bind(UpdateRequestInterface::class, GitHubUpdateRequest::class);
 
         // webhooks:
         $this->app->bind(MessageGeneratorInterface::class, StandardMessageGenerator::class);

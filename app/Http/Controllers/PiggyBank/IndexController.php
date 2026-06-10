@@ -45,7 +45,7 @@ use Symfony\Component\HttpFoundation\ParameterBag;
 /**
  * Class IndexController
  */
-class IndexController extends Controller
+final class IndexController extends Controller
 {
     use OrganisesObjectGroups;
 
@@ -81,16 +81,6 @@ class IndexController extends Controller
         $this->piggyRepos->resetOrder();
         $collection = $this->piggyRepos->getPiggyBanks();
 
-        session('end', today(config('app.timezone'))->endOfMonth());
-
-        // transform piggies using the transformer:
-        // $parameters         = new ParameterBag();
-        // $parameters->set('end', $end);
-
-        // /** @var AccountTransformer $accountTransformer */
-        // $accountTransformer = app(AccountTransformer::class);
-        // $accountTransformer->setParameters($parameters);
-
         // data
         $piggyBanks = $this->groupPiggyBanks($collection);
         $accounts   = $this->collectAccounts($collection);
@@ -99,7 +89,7 @@ class IndexController extends Controller
 
         ksort($piggyBanks);
 
-        return view('piggy-banks.index', ['piggyBanks' => $piggyBanks, 'accounts'   => $accounts]);
+        return view('piggy-banks.index', ['piggyBanks' => $piggyBanks, 'accounts' => $accounts]);
     }
 
     /**
@@ -107,8 +97,8 @@ class IndexController extends Controller
      */
     public function setOrder(Request $request, PiggyBank $piggyBank): JsonResponse
     {
-        $objectGroupTitle = (string) $request->get('objectGroupTitle');
-        $newOrder         = (int) $request->get('order');
+        $objectGroupTitle = (string) $request->input('objectGroupTitle');
+        $newOrder         = (int) $request->input('order');
         $this->piggyRepos->setOrder($piggyBank, $newOrder);
         if ('' !== $objectGroupTitle) {
             $this->piggyRepos->setObjectGroup($piggyBank, $objectGroupTitle);
@@ -122,21 +112,15 @@ class IndexController extends Controller
 
     private function collectAccounts(Collection $collection): array
     {
-        /** @var Carbon $end */
-        $end                = session('end', today(config('app.timezone'))->endOfMonth());
-
-        // transform piggies using the transformer:
-        $parameters         = new ParameterBag();
-        $parameters->set('end', $end);
+        $now                = Carbon::now();
 
         /** @var AccountTransformer $accountTransformer */
         $accountTransformer = app(AccountTransformer::class);
-        $accountTransformer->setParameters($parameters);
 
         // enrich each account.
         $enrichment         = new AccountEnrichment();
         $enrichment->setUser(auth()->user());
-        $enrichment->setDate($end);
+        $enrichment->setDate($now);
         $return             = [];
 
         /** @var PiggyBank $piggy */

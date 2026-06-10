@@ -48,7 +48,7 @@ class LinkTypeRepository implements LinkTypeRepositoryInterface, UserGroupInterf
     public function destroy(LinkType $linkType, ?LinkType $moveTo = null): bool
     {
         if ($moveTo instanceof LinkType) {
-            TransactionJournalLink::where('link_type_id', $linkType->id)->update(['link_type_id' => $moveTo->id]);
+            TransactionJournalLink::query()->where('link_type_id', $linkType->id)->update(['link_type_id' => $moveTo->id]);
         }
         $linkType->delete();
 
@@ -76,7 +76,7 @@ class LinkTypeRepository implements LinkTypeRepositoryInterface, UserGroupInterf
             return null;
         }
 
-        return LinkType::where('name', $name)->first();
+        return LinkType::query()->where('name', $name)->first();
     }
 
     /**
@@ -96,7 +96,8 @@ class LinkTypeRepository implements LinkTypeRepositoryInterface, UserGroupInterf
      */
     public function findSpecificLink(LinkType $linkType, TransactionJournal $inward, TransactionJournal $outward): ?TransactionJournalLink
     {
-        return TransactionJournalLink::where('link_type_id', $linkType->id)
+        return TransactionJournalLink::query()
+            ->where('link_type_id', $linkType->id)
             ->where('source_id', $inward->id)
             ->where('destination_id', $outward->id)
             ->first()
@@ -105,7 +106,7 @@ class LinkTypeRepository implements LinkTypeRepositoryInterface, UserGroupInterf
 
     public function get(): Collection
     {
-        return LinkType::orderBy('name', 'ASC')->get();
+        return LinkType::query()->orderBy('name', 'ASC')->get();
     }
 
     /**
@@ -116,8 +117,15 @@ class LinkTypeRepository implements LinkTypeRepositoryInterface, UserGroupInterf
         $links        = $linkType->transactionJournalLinks()->get(['source_id', 'destination_id']);
         $sources      = $links->pluck('source_id')->toArray();
         $destinations = $links->pluck('destination_id')->toArray();
+        $joined       = array_unique(array_merge($sources, $destinations));
 
-        return array_unique(array_merge($sources, $destinations));
+        return $this->user
+            ->transactionJournals()
+            ->whereIn('id', $joined)
+            ->get(['transaction_journals.id'])
+            ->pluck('id')
+            ->toArray()
+        ;
     }
 
     /**
@@ -125,7 +133,8 @@ class LinkTypeRepository implements LinkTypeRepositoryInterface, UserGroupInterf
      */
     public function getJournalLinks(?LinkType $linkType = null): Collection
     {
-        $query = TransactionJournalLink::with(['source', 'destination'])
+        $query = TransactionJournalLink::query()
+            ->with(['source', 'destination'])
             ->leftJoin('transaction_journals as source_journals', 'journal_links.source_id', '=', 'source_journals.id')
             ->leftJoin('transaction_journals as dest_journals', 'journal_links.destination_id', '=', 'dest_journals.id')
             ->where('source_journals.user_id', $this->user->id)

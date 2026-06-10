@@ -10,7 +10,7 @@ on:
       phpversion:
         description: 'PHP version'
         required: true
-        default: '8.4'
+        default: '8.5'
   schedule:
     - cron: '0 3 * * MON'
 
@@ -67,7 +67,6 @@ jobs:
             exit 1
           fi
 
-
           #
           # Always check out origin/develop, unless its a branch release.
           #
@@ -91,6 +90,11 @@ jobs:
           git config user.email release@firefly-iii.org
           git config advice.addIgnoredFile false
           git config push.autoSetupRemote true
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ github.event.inputs.phpversion || '8.5' }}
+          extensions: mbstring, intl, zip, bcmath
       - name: Lint PHP
         run: |
           php_lint_file()
@@ -112,6 +116,37 @@ jobs:
           then
               exit 1
           fi
+      - name: Code cleanup
+        id: code-cleanup
+        uses: JC5/firefly-iii-dev@main
+        with:
+          action: 'ff3:code'
+          output: ''
+        env:
+          FIREFLY_III_ROOT: /github/workspace
+          GH_TOKEN: ''
+      - name: Run CI
+        run: |
+          cp .env.example .env
+          # install all packages etc.
+          rm -rf vendor composer.lock
+          composer update --no-scripts -q
+
+          # format code.
+          echo "Will now run Mago Format"
+          ./vendor/bin/mago format
+          sudo chown -R runner:docker resources/lang
+          echo "Will now run PHPCS"
+          .ci/phpcs.sh
+
+          # lint and check
+          echo "Will now run Mago Lint"
+          ./vendor/bin/mago lint
+          echo "Will now run PHPstan"
+          .ci/phpstan.sh
+          rm .env
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Crowdin action
         uses: crowdin/github-action@v2
         with:
@@ -123,6 +158,30 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           CROWDIN_PROJECT_NR: ${{ secrets.CROWDIN_PROJECT_NR }}
           CROWDIN_TOKEN: ${{ secrets.CROWDIN_TOKEN }}
+      - name: Generate JSON v1
+        id: json-v1
+        uses: JC5/firefly-iii-dev@main
+        with:
+          action: 'ff3:json-translations v1'
+          output: ''
+        env:
+          FIREFLY_III_ROOT: /github/workspace
+          GH_TOKEN: ''
+      - name: Generate JSON v2
+        id: json-v2
+        uses: JC5/firefly-iii-dev@main
+        with:
+          action: 'ff3:json-translations v2'
+          output: ''
+        env:
+          FIREFLY_III_ROOT: /github/workspace
+          GH_TOKEN: ''
+      - name: Build JS
+        run: |
+          npm install
+          npm run prod  --workspace=v1 --verbose
+          npm run build --workspace=v2 --verbose
+          npm update
       - name: Cleanup changelog
         id: cleanup-changelog
         uses: JC5/firefly-iii-dev@main

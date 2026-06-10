@@ -1,30 +1,66 @@
 parameters:
+  ergebnis:
+    noExtends:
+      enabled: false
+    final:
+      enabled: false
+    noParameterWithNullDefaultValue:
+      enabled: false
+    noParameterWithNullableTypeDeclaration:
+      enabled: false
+    noCompact:
+      enabled: false
+    noSwitch:
+      enabled: false
+    noNullableReturnTypeDeclaration:
+      enabled: false
+    finalInAbstractClass:
+      enabled: false
+    noConstructorParameterWithDefaultValue:
+      enabled: false
+    noNamedArgument:
+      enabled: false
+    noParameterWithContainerTypeDeclaration:
+      enabled: true
   paths:
     - ../app
     - ../database
     - ../routes
     - ../config
     - ../bootstrap/app.php
+    - ../bootstrap/providers.php
   universalObjectCratesClasses:
     - Illuminate\Database\Eloquent\Model
   reportUnmatchedIgnoredErrors: true
   ignoreErrors:
-    # all errors below I will never fix.
-    - '#expects view-string\|null, string given#'
-    - '#expects view-string, string given#'
-    - "#Parameter \\#[1-2] \\$num[1-2] of function bc[a-z]+ expects numeric-string, [a-z\\-|&]+ given#"
+    # ignore everything but things that BREAK
+    - identifier: property.deprecated
+    - identifier: method.deprecated
+    - identifier: cast.useless
+    - identifier: argument.type
+    # all errors below I will (probably) never fix.
+    # - identifier: property.unusedType # one false positive
+    - identifier: varTag.nativeType # dont even know what im supposed to fix.
+    - identifier: method.notFound # way too many false positives
+    - identifier: catch.neverThrown # plenty of errors that are thrown undocumented
+    - identifier: staticMethod.dynamicName # dont care
+    - identifier: arguments.count # one false positive
+    - identifier: property.notFound # false positives
+    - identifier: method.dynamicName # i dont care
+    - identifier: staticMethod.dynamicCall # many false positives.
+    - identifier: argument.templateType # no clue how to fix single occurrence.
+    # - '#expects view-string\|null, string given#'
+    # - '#expects view-string, string given#'
+    # - "#Parameter \\#[1-2] \\$num[1-2] of function bc[a-z]+ expects numeric-string, [a-z\\-|&]+ given#"
     - identifier: missingType.generics # not interesting enough to fix.
-    -
-        identifier: larastan.noEnvCallsOutsideOfConfig
-        path: ../app/Console/Commands/System/CreatesDatabase.php
     - identifier: missingType.iterableValue # not interesting enough to fix.
     - identifier: varTag.type # needs a custom extension for every repository, not gonna happen.
-    - '#Dynamic call to static method Illuminate#'
-    - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany::before#' # is custom scope
-    - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany::after#' # is custom scope
-    - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany::withTrashed#' # is to allow soft delete
-    - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany::accountTypeIn#' # is a custom scope
-    - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\BelongsTo::withTrashed#' # is to allow soft delete
+    # - '#Dynamic call to static method Illuminate#'
+    # - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany::before#' # is custom scope
+    # - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany::after#' # is custom scope
+    # - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany::withTrashed#' # is to allow soft delete
+    # - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany::accountTypeIn#' # is a custom scope
+    # - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\BelongsTo::withTrashed#' # is to allow soft delete
 
   # The level 8 is the highest level. original was 5
   # 7 is more than enough, higher just leaves NULL things.

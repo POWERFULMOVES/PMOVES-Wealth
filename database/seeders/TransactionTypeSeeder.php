@@ -26,6 +26,7 @@ namespace Database\Seeders;
 use FireflyIII\Enums\TransactionTypeEnum;
 use FireflyIII\Models\TransactionType;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Log;
 use PDOException;
 
 /**
@@ -36,12 +37,12 @@ class TransactionTypeSeeder extends Seeder
     public function run(): void
     {
         /** @var TransactionTypeEnum $type */
-        foreach (TransactionTypeEnum::cases() as $type) { // @phpstan-ignore-line
-            if (null === TransactionType::where('type', $type->value)->first()) {
+        foreach (TransactionTypeEnum::cases() as $type) {
+            if (null === TransactionType::query()->where('type', $type->value)->first()) {
                 try {
                     TransactionType::create(['type' => $type->value]);
                 } catch (PDOException $e) {
-                    // @ignoreException
+                    Log::debug(sprintf('Transaction type with value "%s" already exists and that is OK.', $type->value));
                 }
             }
         }

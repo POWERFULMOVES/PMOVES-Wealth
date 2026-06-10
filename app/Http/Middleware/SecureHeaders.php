@@ -58,24 +58,29 @@ class SecureHeaders
             "default-src 'none'",
             "object-src 'none'",
             sprintf("script-src 'unsafe-eval' 'strict-dynamic' 'nonce-%1s'", $nonce),
-            "style-src 'unsafe-inline' 'self'",
+            // sprintf("style-src 'self' 'nonce-%1s'", $nonce), // safe variant
+            "style-src 'self' 'unsafe-inline'", // unsafe variant
             "base-uri 'self'",
+            // "form-action 'self'", // safe
             "font-src 'self' data:",
-            sprintf("connect-src 'self' %s", $trackingScriptSrc),
+            sprintf("connect-src 'self' https://api.pwnedpasswords.com %s", $trackingScriptSrc),
             sprintf("img-src 'self' data: 'nonce-%1s' ", $nonce),
             "manifest-src 'self'",
         ];
 
         // overrule in development mode
-        if (true === env('IS_LOCAL_DEV')) { // @phpstan-ignore-line
+        if (true === config('firefly.is_local_dev')) {
+            $ip  = '192.168.96.165';
             $csp = [
                 "default-src 'none'",
                 "object-src 'none'",
-                sprintf("script-src 'unsafe-eval' 'strict-dynamic' 'nonce-%1s' https://firefly.sd.internal/_debugbar/assets", $nonce),
-                "style-src 'unsafe-inline' 'self' https://10.0.0.15:5173/",
+                sprintf("script-src 'unsafe-eval' 'strict-dynamic' 'nonce-%1s'", $nonce),
+                //                 sprintf("style-src 'self' 'nonce-%1s' https://10.0.0.15:5173/", $nonce), // safe variant
+                sprintf("style-src 'self' 'unsafe-inline' https://%s:5173/", $ip), // unsafe variant
                 "base-uri 'self'",
-                "font-src 'self' data: https://10.0.0.15:5173/",
-                sprintf("connect-src 'self' %s https://10.0.0.15:5173/ wss://10.0.0.15:5173/", $trackingScriptSrc),
+                "form-action 'self'",
+                sprintf("font-src 'self' data: https://%s:5173/", $ip),
+                sprintf('connect-src \'self\' %1$s https://%2$s:5173/ wss://%2$s:5173/', $trackingScriptSrc, $ip),
                 sprintf("img-src 'self' data: 'nonce-%1s'", $nonce),
                 "manifest-src 'self'",
             ];
@@ -89,7 +94,7 @@ class SecureHeaders
             $customUrl = $logoutUrl;
         }
 
-        if (null !== $route && 'oauth/authorize' !== $route->uri) {
+        if ('' !== $customUrl && null !== $route && 'oauth/authorize' !== $route->uri) {
             $csp[] = sprintf("form-action 'self' %s", $customUrl);
         }
 
@@ -112,17 +117,37 @@ class SecureHeaders
         $disableFrameHeader = config('firefly.disable_frame_header');
         $disableCSP         = config('firefly.disable_csp_header');
         if (false === $disableFrameHeader) {
-            $response->header('X-Frame-Options', 'deny');
+            if (method_exists($response, 'header')) {
+                $response->header('X-Frame-Options', 'deny');
+            }
+            if (!method_exists($response, 'header')) {
+                $response->headers->set('X-Frame-Options', 'deny');
+            }
         }
         if (false === $disableCSP && !$response->headers->has('Content-Security-Policy')) {
-            $response->header('Content-Security-Policy', implode('; ', $csp));
+            if (method_exists($response, 'header')) {
+                $response->header('Content-Security-Policy', implode('; ', $csp));
+            }
+            if (!method_exists($response, 'header')) {
+                $response->headers->set('Content-Security-Policy', implode('; ', $csp));
+            }
         }
-        $response->header('X-XSS-Protection', '1; mode=block');
-        $response->header('X-Content-Type-Options', 'nosniff');
-        $response->header('Referrer-Policy', 'no-referrer');
-        $response->header('X-Permitted-Cross-Domain-Policies', 'none');
-        $response->header('X-Robots-Tag', 'none');
-        $response->header('Feature-Policy', implode('; ', $featurePolicies));
+        if (method_exists($response, 'header')) {
+            $response->header('X-XSS-Protection', '1; mode=block');
+            $response->header('X-Content-Type-Options', 'nosniff');
+            $response->header('Referrer-Policy', 'no-referrer');
+            $response->header('X-Permitted-Cross-Domain-Policies', 'none');
+            $response->header('X-Robots-Tag', 'none');
+            $response->header('Feature-Policy', implode('; ', $featurePolicies));
+        }
+        if (!method_exists($response, 'header')) {
+            $response->headers->set('X-XSS-Protection', '1; mode=block');
+            $response->headers->set('X-Content-Type-Options', 'nosniff');
+            $response->headers->set('Referrer-Policy', 'no-referrer');
+            $response->headers->set('X-Permitted-Cross-Domain-Policies', 'none');
+            $response->headers->set('X-Robots-Tag', 'none');
+            $response->headers->set('Feature-Policy', implode('; ', $featurePolicies));
+        }
 
         return $response;
     }
