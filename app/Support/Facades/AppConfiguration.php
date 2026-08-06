@@ -1,8 +1,8 @@
 <?php
 
-/*
- * SetLatestVersion.php
- * Copyright (c) 2023 james@firefly-iii.org
+/**
+ * AppConfiguration.php
+ * Copyright (c) 2019 james@firefly-iii.org
  *
  * This file is part of Firefly III (https://github.com/firefly-iii).
  *
@@ -19,36 +19,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 declare(strict_types=1);
 
-namespace FireflyIII\Console\Commands\System;
+namespace FireflyIII\Support\Facades;
 
-use FireflyIII\Console\Commands\ShowsFriendlyMessages;
-use FireflyIII\Support\Facades\AppConfiguration;
-use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Facade;
 
-class SetsLatestVersion extends Command
+class AppConfiguration extends Facade
 {
-    use ShowsFriendlyMessages;
-
-    protected $description = 'Set latest version in DB.';
-
-    protected $signature   = 'firefly-iii:set-latest-version {--james-is-cool}';
-
     /**
-     * Execute the console command.
+     * Get the registered name of the component.
      */
-    public function handle(): int
+    protected static function getFacadeAccessor(): string
     {
-        if (!$this->option('james-is-cool')) {
-            $this->friendlyError('Am too!');
-
-            return 0;
-        }
-        AppConfiguration::set('ff3_build_time', (int) config('firefly.build_time'));
-        $this->friendlyInfo('Updated version.');
-
-        return 0;
+        return 'appconfiguration';
     }
 }

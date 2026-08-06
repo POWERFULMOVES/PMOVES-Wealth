@@ -1,8 +1,8 @@
 <?php
 
-/**
- * FireflyConfig.php
- * Copyright (c) 2019 james@firefly-iii.org
+/*
+ * LockedOutException.php
+ * Copyright (c) 2026 james@firefly-iii.org
  *
  * This file is part of Firefly III (https://github.com/firefly-iii).
  *
@@ -19,19 +19,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 declare(strict_types=1);
 
-namespace FireflyIII\Support\Facades;
+namespace FireflyIII\Exceptions;
 
-use Illuminate\Support\Facades\Facade;
-
-class FireflyConfig extends Facade
-{
-    /**
-     * Get the registered name of the component.
-     */
-    protected static function getFacadeAccessor(): string
-    {
-        return 'fireflyconfig';
-    }
-}
+class LockedOutException extends FireflyException {}

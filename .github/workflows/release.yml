@@ -7,6 +7,11 @@ on:
         description: 'Release "v1.2.3" or "develop" or "branch-abc"'
         required: true
         default: 'develop'
+      quick:
+        type: boolean
+        description: 'Quick run'
+        required: true
+        default: false
       phpversion:
         description: 'PHP version'
         required: true
@@ -27,13 +32,17 @@ jobs:
           # validate argument
           if  [[ $version != develo* ]] && [[ $version != v* ]] && [[ $version != branch* ]] ;
           then
-            echo "Argument '$version' does not start with a d or with a v or a b"
+            echo "Argument '$version' does not start with a d or with a v or 'branch'"
             exit 1
           fi
+
+          echo "Run quick? = '$quick'"
+          # suppresses the warning about the default branch being 'master' instead of 'main'.
+          git config --global init.defaultBranch main
         env:
           version: ${{ env.RELEASE_VERSION }}
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Import GPG key (optional)
@@ -61,9 +70,9 @@ jobs:
       - name: Switch and pull
         run: |
           # validate argument
-          if  [[ $version != d* ]] && [[ $version != v* ]] ;
+          if  [[ $version != develo* ]] && [[ $version != v* ]] && [[ $version != branch* ]] ;
           then
-            echo 'Argument does not start with a d or with a v'
+            echo "Argument '$version' does not start with a d or with a v or 'branch'"
             exit 1
           fi
 
@@ -72,10 +81,11 @@ jobs:
           #
           BRANCH_TO_PULL=origin/develop
           if [[ "$version" == branch* ]]; then
-            BRANCH_TO_PULL=origin/$version
+            SHORT=${version:7}
+            BRANCH_TO_PULL="origin/$SHORT"
           fi
 
-          echo "Version is '$version', check out '$BRANCH_TO_PULL'-branch"
+          echo "Version is '$version', check out '$BRANCH_TO_PULL' branch"
 
           git checkout --track $BRANCH_TO_PULL
           git pull
@@ -85,6 +95,7 @@ jobs:
       - name: Configure Git
         run: |
           # do some configuration
+          sudo ln -fs /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime
           sudo timedatectl set-timezone Europe/Amsterdam
           git config user.name JC5
           git config user.email release@firefly-iii.org
@@ -96,28 +107,38 @@ jobs:
           php-version: ${{ github.event.inputs.phpversion || '8.5' }}
           extensions: mbstring, intl, zip, bcmath
       - name: Lint PHP
+        if: ${{ inputs.quick != true }}
         run: |
-          php_lint_file()
-          {
-              local php_file="$1"
-              php -l "$php_file" &> /dev/null
-              if [ "$?" -ne 0 ]
-              then
-                  echo -e "[FAIL] $php_file"
-                  return 1
-              fi
-          }
-
-          export -f php_lint_file
-
-          find . -path ./vendor -prune -o -name '*.php' | parallel -j 4 php_lint_file {}
-
-          if [ "$?" -ne 0 ]
-          then
-              exit 1
+          if [[ "$quick" == true ]]; then
+            echo "Will NOT run PHP lint"
           fi
+          if [[ "$quick" == false ]]; then
+            echo "Will run PHP lint!"
+            php_lint_file()
+            {
+                local php_file="$1"
+                php -l "$php_file" &> /dev/null
+                if [ "$?" -ne 0 ]
+                then
+                    echo -e "[FAIL] $php_file"
+                    return 1
+                fi
+            }
+
+            export -f php_lint_file
+
+            find . -path ./vendor -prune -o -name '*.php' | parallel -j 4 php_lint_file {}
+
+            if [ "$?" -ne 0 ]
+            then
+                exit 1
+            fi
+          fi
+        env:
+          quick: ${{ inputs.quick || false }}
       - name: Code cleanup
         id: code-cleanup
+        if: ${{ inputs.quick != true }}
         uses: JC5/firefly-iii-dev@main
         with:
           action: 'ff3:code'
@@ -125,13 +146,17 @@ jobs:
         env:
           FIREFLY_III_ROOT: /github/workspace
           GH_TOKEN: ''
-      - name: Run CI
+      - name: Install Composer dependencies
         run: |
           cp .env.example .env
           # install all packages etc.
           rm -rf vendor composer.lock
           composer update --no-scripts -q
-
+          rm .env
+      - name: Run CI
+        if: ${{ inputs.quick != true }}
+        run: |
+          cp .env.example .env
           # format code.
           echo "Will now run Mago Format"
           ./vendor/bin/mago format
@@ -147,7 +172,18 @@ jobs:
           rm .env
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          quick: ${{ inputs.quick || false }}
+      - name: Lint Blade templates
+        if: ${{ inputs.quick != true }}
+        run: |
+          echo "Will now run Blade linter"
+          cp .env.example .env
+          php artisan blade:lint
+          rm .env
+        env:
+          quick: ${{ inputs.quick || false }}
       - name: Crowdin action
+        if: ${{ inputs.quick != true }}
         uses: crowdin/github-action@v2
         with:
           upload_sources: true
@@ -158,20 +194,11 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           CROWDIN_PROJECT_NR: ${{ secrets.CROWDIN_PROJECT_NR }}
           CROWDIN_TOKEN: ${{ secrets.CROWDIN_TOKEN }}
-      - name: Generate JSON v1
-        id: json-v1
+      - name: Generate JSON v3
+        id: json-v3
         uses: JC5/firefly-iii-dev@main
         with:
-          action: 'ff3:json-translations v1'
-          output: ''
-        env:
-          FIREFLY_III_ROOT: /github/workspace
-          GH_TOKEN: ''
-      - name: Generate JSON v2
-        id: json-v2
-        uses: JC5/firefly-iii-dev@main
-        with:
-          action: 'ff3:json-translations v2'
+          action: 'ff3:json-translations v3'
           output: ''
         env:
           FIREFLY_III_ROOT: /github/workspace
@@ -179,10 +206,11 @@ jobs:
       - name: Build JS
         run: |
           npm install
-          npm run prod  --workspace=v1 --verbose
-          npm run build --workspace=v2 --verbose
+          npm run prod --workspace=v1 --verbose
+          npm run build --workspace=v3 --verbose
           npm update
       - name: Cleanup changelog
+        if: ${{ inputs.quick != true }}
         id: cleanup-changelog
         uses: JC5/firefly-iii-dev@main
         with:
@@ -192,6 +220,7 @@ jobs:
           FIREFLY_III_ROOT: /github/workspace
           GH_TOKEN: ${{ secrets.CHANGELOG_TOKEN }}
       - name: "Create THANKS.md"
+        if: ${{ inputs.quick != true }}
         id: thank-you
         uses: JC5/firefly-iii-dev@main
         with:
@@ -339,6 +368,7 @@ jobs:
           GH_TOKEN: ""
       - name: Merge all into working branch
         run: |
+          git status
           MERGE_INTO=develop
             if [[ "$version" == branch* ]]; then
                 MERGE_INTO=$version

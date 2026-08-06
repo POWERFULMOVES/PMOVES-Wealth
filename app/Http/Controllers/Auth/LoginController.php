@@ -27,10 +27,11 @@ use Carbon\Carbon;
 use FireflyIII\Events\Security\System\UnknownUserTriedLogin;
 use FireflyIII\Events\Security\User\UserFailedLoginAttempt;
 use FireflyIII\Events\Security\User\UserSuccessfullyLoggedIn;
+use FireflyIII\Exceptions\LockedOutException;
 use FireflyIII\Http\Controllers\Controller;
 use FireflyIII\Providers\RouteServiceProvider;
 use FireflyIII\Repositories\User\UserRepositoryInterface;
-use FireflyIII\Support\Facades\FireflyConfig;
+use FireflyIII\Support\Facades\AppConfiguration;
 use FireflyIII\Support\Facades\Steam;
 use FireflyIII\User;
 use Illuminate\Contracts\View\Factory;
@@ -85,9 +86,27 @@ final class LoginController extends Controller
      */
     public function login(Request $request): JsonResponse|RedirectResponse
     {
-        $username = $request->get($this->username());
-        Log::channel('audit')->info(sprintf('User is trying to login using "%s"', $username));
+        Log::channel('audit')->info(sprintf('User is trying to login using "%s"', $request->input($this->username())));
         Log::debug('User is trying to login.');
+
+        // first, check for too many login attempts:
+        $this->incrementLoginAttempts($request);
+
+        // Copied directly from AuthenticatesUsers, but with logging added:
+        // If the class is using the ThrottlesLogins trait, we can automatically throttle
+        // the login attempts for this application. We'll key this by the username and
+        // the IP address of the client making these requests into this application.
+        if ($this->hasTooManyLoginAttempts($request)) {
+            Log::channel('audit')->warning(sprintf('Login for user "%s" was locked out.', $request->get($this->username())));
+            Log::error(sprintf('Login for user "%s" was locked out.', $request->get($this->username())));
+            $this->fireLockoutEvent($request);
+            $seconds = $this->limiter()->availableIn($this->throttleKey($request));
+            $message = (string) trans('auth.throttle', ['seconds' => $seconds, 'minutes' => ceil($seconds / 60)]);
+            Log::error(sprintf('Will SLEEP for %d second(s).', $seconds));
+            sleep($seconds);
+
+            throw new LockedOutException($message);
+        }
 
         try {
             $this->validateLogin($request);
@@ -99,16 +118,6 @@ final class LoginController extends Controller
         }
         Log::debug('Login data is present.');
 
-        // Copied directly from AuthenticatesUsers, but with logging added:
-        // If the class is using the ThrottlesLogins trait, we can automatically throttle
-        // the login attempts for this application. We'll key this by the username and
-        // the IP address of the client making these requests into this application.
-        if ($this->hasTooManyLoginAttempts($request)) {
-            Log::channel('audit')->warning(sprintf('Login for user "%s" was locked out.', $request->get($this->username())));
-            Log::error(sprintf('Login for user "%s" was locked out.', $request->get($this->username())));
-            $this->fireLockoutEvent($request);
-            $this->sendLockoutResponse($request);
-        }
         // Copied directly from AuthenticatesUsers, but with logging added:
         if ($this->attemptLogin($request)) {
             Log::channel('audit')->info(sprintf('User "%s" has been logged in.', $request->get($this->username())));
@@ -151,12 +160,12 @@ final class LoginController extends Controller
      */
     public function logout(Request $request): RedirectResponse|Response
     {
-        $authGuard  = config('firefly.authentication_guard');
-        $logoutUrl  = config('firefly.custom_logout_url');
+        $authGuard  = (string) config('firefly.authentication_guard');
+        $logoutUrl  = (string) config('firefly.custom_logout_url');
         if ('remote_user_guard' === $authGuard && '' !== $logoutUrl) {
             return redirect($logoutUrl);
         }
-        if ('remote_user_guard' === $authGuard && '' === $logoutUrl) {
+        if ('remote_user_guard' === $authGuard) {
             session()->flash('error', trans('firefly.cant_logout_guard'));
         }
 
@@ -199,7 +208,7 @@ final class LoginController extends Controller
         }
 
         // is allowed to register, etc.
-        $singleUserMode    = FireflyConfig::get('single_user_mode', config('firefly.configuration.single_user_mode'))->data;
+        $singleUserMode    = AppConfiguration::get('single_user_mode', config('firefly.configuration.single_user_mode'))->data;
         $allowRegistration = true;
         $allowReset        = true;
         if (true === $singleUserMode && $count > 0) {
