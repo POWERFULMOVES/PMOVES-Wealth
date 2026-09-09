@@ -1,459 +1,214 @@
-# PMOVES-Wealth
-
-[![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
-[![PMOVES.AI](https://img.shields.io/badge/PMOVES.AI-Integration-green.svg)](https://github.com/POWERFULMOVES/PMOVES.AI)
-
-> Personal finance management and wealth tracking integration for PMOVES.AI
-
-PMOVES-Wealth is a customized deployment of [Firefly III](https://github.com/firefly-iii/firefly-iii), a self-hosted personal finance manager, integrated into the PMOVES.AI multi-agent orchestration platform. It provides comprehensive financial tracking, budgeting, and wealth management capabilities with AI-powered insights.
-
-## Overview
-
-PMOVES-Wealth enables you to:
-- Track income and expenses across multiple accounts
-- Create budgets and monitor spending patterns
-- Manage recurring transactions and subscriptions
-- Generate detailed financial reports and visualizations
-- Import data from banks and financial institutions
-- Maintain complete privacy with self-hosted infrastructure
-
-As part of the PMOVES.AI ecosystem, PMOVES-Wealth integrates with Agent Zero, Hi-RAG, and other services to provide intelligent financial insights and automated wealth tracking.
-
-## Features
-
-### Core Financial Management
-- **Double-Entry Bookkeeping**: Accurate financial tracking with industry-standard accounting
-- **Multi-Currency Support**: Track accounts in any currency with automatic conversion
-- **Account Types**: Support for asset accounts, expense accounts, revenue accounts, cash accounts, and liabilities
-- **Transaction Management**: Create, edit, and categorize transactions with rich metadata
-
-### Planning & Budgeting
-- **Budget Management**: Set monthly/quarterly/yearly budgets and track spending
-- **Piggy Banks**: Save toward specific goals with dedicated tracking
-- **Recurring Transactions**: Automate regular income and expenses
-- **Financial Reports**: Comprehensive income/expense reports with charts and graphs
-
-### Automation & Intelligence
-- **Rule-Based Automation**: Automatically categorize and process transactions
-- **Transaction Import**: Import from CSV, banks, and financial institutions
-- **REST API**: Full-featured JSON API for integrations
-- **Webhooks**: Event-driven notifications for financial events
-
-### Security & Privacy
-- **Self-Hosted**: Complete control over your financial data
-- **2FA Authentication**: Enhanced security with two-factor authentication
-- **OAuth2/Passport**: Secure API access with token-based authentication
-- **Audit Logging**: Track system access and changes
-
-## Quick Start
-
-### Prerequisites
-- Docker and Docker Compose
-- Access to PMOVES.AI network (`pmoves-net`)
-- MySQL/PostgreSQL database
-- PHP 8.4+ (for local development)
-
-### Docker Deployment (Recommended)
-
-PMOVES-Wealth runs as part of the PMOVES.AI stack:
-
-```bash
-# From PMOVES.AI root directory
-docker compose -f PMOVES-Wealth/docker-compose.pmoves-net.yml up -d
-```
-
-The service will be available at `http://localhost:8080` (or configured port).
-
-### Standalone Deployment
-
-```bash
-# Clone the repository
-git clone https://github.com/POWERFULMOVES/PMOVES-Wealth.git
-cd PMOVES-Wealth
-
-# Copy environment configuration
-cp .env.example .env
-
-# Configure your database and settings in .env
-nano .env
-
-# Start with Docker Compose
-docker compose up -d
-```
-
-## Configuration
-
-### Environment Variables
-
-Key configuration options in `.env`:
-
-#### Application Settings
-```bash
-APP_ENV=production                    # Environment: production, local, testing
-APP_DEBUG=false                       # Debug mode (disable in production)
-APP_KEY=                              # 32-character encryption key (generate with artisan)
-APP_URL=http://localhost              # Public URL for your installation
-SITE_OWNER=your.email@example.com     # Admin email address
-```
-
-#### Database Configuration
-```bash
-DB_CONNECTION=mysql                   # Database type: mysql, pgsql, sqlite
-DB_HOST=db                            # Database hostname
-DB_PORT=3306                          # Database port
-DB_DATABASE=firefly                   # Database name
-DB_USERNAME=firefly                   # Database user
-DB_PASSWORD=secret_firefly_password   # Database password
-```
-
-#### Timezone & Localization
-```bash
-TZ=America/New_York                   # Your timezone
-DEFAULT_LANGUAGE=en_US                # Default language
-DEFAULT_LOCALE=equal                  # Number formatting locale
-```
-
-#### Authentication
-```bash
-AUTHENTICATION_GUARD=web              # Auth method: web, remote_user_guard
-CUSTOM_LOGOUT_URL=                    # Custom logout redirect
-```
-
-#### Email Notifications
-```bash
-MAIL_MAILER=smtp                      # Mail driver: smtp, log, sendmail
-MAIL_HOST=smtp.example.com            # SMTP hostname
-MAIL_PORT=587                         # SMTP port
-MAIL_FROM=firefly@example.com         # From address
-MAIL_USERNAME=                        # SMTP username
-MAIL_PASSWORD=                        # SMTP password
-MAIL_ENCRYPTION=tls                   # Encryption: tls, ssl
-```
-
-#### Performance & Caching
-```bash
-CACHE_DRIVER=redis                    # Cache: file, redis, memcached
-SESSION_DRIVER=redis                  # Sessions: file, redis, database
-REDIS_HOST=127.0.0.1                  # Redis hostname
-REDIS_PORT=6379                       # Redis port
-REDIS_PASSWORD=                       # Redis password
-```
-
-#### Security & Privacy
-```bash
-TRUSTED_PROXIES=**                    # Trust reverse proxies
-DISABLE_FRAME_HEADER=false            # X-Frame-Options header
-DISABLE_CSP_HEADER=false              # Content Security Policy header
-```
-
-#### Optional Features
-```bash
-ENABLE_EXTERNAL_MAP=false             # Geolocation features
-ENABLE_EXCHANGE_RATES=false           # Currency conversion
-ENABLE_EXTERNAL_RATES=false           # Download exchange rates
-ALLOW_WEBHOOKS=false                  # Enable webhook functionality
-STATIC_CRON_TOKEN=                    # Token for cron jobs (32 chars)
-```
-
-### First-Time Setup
-
-1. **Generate Application Key**:
-   ```bash
-   docker exec -it pmoves-wealth php artisan key:generate
-   ```
-
-2. **Run Database Migrations**:
-   ```bash
-   docker exec -it pmoves-wealth php artisan migrate --seed
-   ```
-
-3. **Create Admin User**: Visit the application URL and complete registration
-
-4. **Configure OAuth Keys** (for API access):
-   ```bash
-   docker exec -it pmoves-wealth php artisan firefly-iii:laravel-passport-keys
-   ```
-
-## API Access
-
-PMOVES-Wealth exposes a comprehensive REST API for integration with PMOVES.AI agents.
-
-### Authentication
-
-1. **Create Personal Access Token**:
-   - Login to PMOVES-Wealth
-   - Navigate to Profile → OAuth → Create New Token
-   - Save the token securely
-
-2. **API Request Example**:
-   ```bash
-   curl -X GET "http://localhost:8080/api/v1/accounts" \
-     -H "Authorization: Bearer YOUR_TOKEN_HERE" \
-     -H "Accept: application/json"
-   ```
-
-### Key API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1/accounts` | GET | List all accounts |
-| `/api/v1/transactions` | GET | List transactions |
-| `/api/v1/budgets` | GET | List budgets |
-| `/api/v1/categories` | GET | List categories |
-| `/api/v1/bills` | GET | List recurring bills |
-| `/api/v1/piggy-banks` | GET | List savings goals |
-| `/api/v1/data/export` | GET | Export all data |
-| `/api/v1/autocomplete/*` | GET | Autocomplete endpoints |
-
-Full API documentation: https://docs.firefly-iii.org/references/api/
-
-## Integration with PMOVES.AI
-
-### Agent Zero Integration
-
-PMOVES-Wealth can be queried by Agent Zero for financial insights:
-
-```python
-# Example: Query account balance via Agent Zero
-response = await agent_zero.mcp_call({
-    "tool": "http_request",
-    "params": {
-        "url": "http://pmoves-wealth:8080/api/v1/accounts",
-        "headers": {"Authorization": "Bearer TOKEN"}
-    }
-})
-```
-
-### NATS Event Integration
-
-Financial events can be published to NATS for agent coordination:
-
-```bash
-# Example: Publish transaction event
-nats pub "wealth.transaction.created.v1" '{
-  "transaction_id": "123",
-  "amount": 500.00,
-  "category": "groceries",
-  "timestamp": "2025-12-16T10:30:00Z"
-}'
-```
-
-### Hi-RAG Integration
-
-Financial data can be indexed into Hi-RAG for semantic search:
-
-```bash
-# Index financial report
-curl -X POST http://localhost:8083/ingest \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "Monthly financial report...",
-    "metadata": {
-      "source": "pmoves-wealth",
-      "type": "financial_report",
-      "date": "2025-12"
-    }
-  }'
-```
-
-### SupaSerch Research
-
-Complex financial research queries can leverage SupaSerch:
-
-```bash
-# Research spending patterns
-nats pub "supaserch.request.v1" '{
-  "query": "Analyze my spending patterns for the last 6 months",
-  "sources": ["pmoves-wealth"],
-  "depth": "comprehensive"
-}'
-```
-
-## Dependencies
-
-### Runtime Dependencies
-- **PHP**: 8.4 or higher
-- **Database**: MySQL 8.0+, PostgreSQL 13+, or SQLite
-- **Web Server**: Nginx (recommended) or Apache
-- **PHP Extensions**: bcmath, curl, fileinfo, intl, json, mbstring, openssl, pdo, session, sodium, xml
-
-### Optional Dependencies
-- **Redis**: For caching and sessions (recommended for production)
-- **Memcached**: Alternative caching backend
-- **SMTP Server**: For email notifications
-
-### Laravel Framework
-Built on Laravel 12, leveraging:
-- Laravel Passport for OAuth2
-- Laravel Sanctum for API tokens
-- Laravel Queue for background jobs
-- Laravel Notifications for alerts
-
-## Development
-
-### Local Development Setup
-
-```bash
-# Install dependencies
-composer install
-npm install
-
-# Copy environment file
-cp .env.example .env
-
-# Generate application key
-php artisan key:generate
-
-# Run migrations
-php artisan migrate --seed
-
-# Start development server
-php artisan serve
-```
-
-### Testing
-
-```bash
-# Run all tests
-composer coverage
-
-# Run unit tests only
-composer unit-test
-
-# Run integration tests only
-composer integration-test
-```
-
-### Code Quality
-
-```bash
-# PHPStan static analysis
-vendor/bin/phpstan analyse
-
-# PHP Code Sniffer
-vendor/bin/phpcs
-
-# Rector refactoring
-vendor/bin/rector process
-```
-
-## Data Import
-
-PMOVES-Wealth supports importing data from:
-- **CSV Files**: Custom format or standard bank exports
-- **Financial Institutions**: Via [Firefly III Data Importer](https://github.com/firefly-iii/data-importer)
-- **Banks**: Using Spectre, Plaid, or other integrations
-- **API**: Programmatic import via REST API
-
-## Backup & Recovery
-
-### Database Backup
-
-```bash
-# Backup database
-docker exec pmoves-wealth-db mysqldump -u firefly -p firefly > backup.sql
-
-# Restore database
-docker exec -i pmoves-wealth-db mysql -u firefly -p firefly < backup.sql
-```
-
-### Full Data Export
-
-```bash
-# Export all data via API
-curl -X GET "http://localhost:8080/api/v1/data/export" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -o firefly-export.zip
-```
-
-## Monitoring & Observability
-
-PMOVES-Wealth integrates with PMOVES.AI monitoring stack:
-
-- **Health Endpoint**: `GET /api/v1/ping` or `GET /health`
-- **Prometheus Metrics**: Laravel metrics via custom exporters
-- **Loki Logs**: Structured logging to centralized Loki
-- **Grafana Dashboards**: Pre-configured financial dashboards
-
-## Security Considerations
-
-- **Keep Updated**: Regularly update to latest version for security patches
-- **Strong Passwords**: Enforce strong password policies
-- **2FA Required**: Enable two-factor authentication for all users
-- **HTTPS Only**: Always use HTTPS in production
-- **Database Security**: Use strong database passwords, restrict network access
-- **Regular Backups**: Automate daily backups with encryption
-- **Audit Logs**: Enable and monitor audit logging
-
-## Troubleshooting
-
-### Common Issues
-
-**Issue**: Database connection errors
-```bash
-# Check database connectivity
-docker exec pmoves-wealth php artisan db:show
-```
-
-**Issue**: Permission errors
-```bash
-# Fix storage permissions
-docker exec pmoves-wealth chmod -R 775 storage bootstrap/cache
-```
-
-**Issue**: Cron jobs not running
-```bash
-# Verify cron configuration
-docker exec pmoves-wealth php artisan schedule:list
-```
-
-**Issue**: API authentication fails
-```bash
-# Regenerate OAuth keys
-docker exec pmoves-wealth php artisan firefly-iii:laravel-passport-keys
-```
-
-## Contributing
-
-PMOVES-Wealth is based on Firefly III. For contributions:
-
-1. **Upstream Contributions**: Submit to [firefly-iii/firefly-iii](https://github.com/firefly-iii/firefly-iii)
-2. **PMOVES Integration**: Submit to [PMOVES-Wealth](https://github.com/POWERFULMOVES/PMOVES-Wealth)
-
-Please follow the [Firefly III Contributing Guidelines](https://docs.firefly-iii.org/explanation/support/#contributing-code).
-
-## Resources
-
-### Documentation
-- [Firefly III Official Docs](https://docs.firefly-iii.org/)
-- [API Reference](https://docs.firefly-iii.org/references/api/)
-- [PMOVES.AI Documentation](https://github.com/POWERFULMOVES/PMOVES.AI)
-
-### Community
-- [Firefly III GitHub Discussions](https://github.com/firefly-iii/firefly-iii/discussions)
-- [Firefly III Gitter Chat](https://gitter.im/firefly-iii/firefly-iii)
-- [Mastodon](https://fosstodon.org/@ff3)
-
-### Related Projects
-- [Firefly III Data Importer](https://github.com/firefly-iii/data-importer)
-- [Firefly III Mobile App](https://docs.firefly-iii.org/references/firefly-iii/third-parties/apps/)
-- [Third-Party Tools](https://docs.firefly-iii.org/references/firefly-iii/third-parties/apps/)
-
-## License
-
-This project is licensed under the [GNU Affero General Public License v3.0](LICENSE).
-
-PMOVES-Wealth is based on Firefly III by James Cole. See [THANKS.md](THANKS.md) for the full list of contributors to Firefly III.
-
-## Acknowledgements
-
-- **Firefly III**: Created and maintained by [James Cole](https://github.com/JC5)
-- **PMOVES.AI**: Multi-agent orchestration platform by POWERFULMOVES
-- **Laravel Framework**: The PHP framework for web artisans
-- **Community Contributors**: All contributors listed in [THANKS.md](THANKS.md)
+[![Packagist][packagist-shield]][packagist-url]
+[![License][license-shield]][license-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Donate][donate-shield]][donate-url]
+
+<p align="center">
+<a href='https://ko-fi.com/Q5Q5R4SH1' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+</p>
+
+<!-- PROJECT LOGO -->
+<br />
+<p align="center">
+  <a href="https://firefly-iii.org/">
+    <img src="https://raw.githubusercontent.com/firefly-iii/firefly-iii/develop/.github/assets/img/logo-small.png" alt="Firefly III" width="120" height="178">
+  </a>
+</p>
+  <h1 align="center">Firefly III</h1>
+
+  <p align="center">
+    A free and open source personal finance manager
+    <br />
+    <a href="https://docs.firefly-iii.org/"><strong>Explore the documentation</strong></a>
+    <br />
+    <br />
+    <a href="https://demo.firefly-iii.org/">View the demo</a>
+    ·
+    <a href="https://github.com/firefly-iii/firefly-iii/issues">Report a bug</a>
+    ·
+    <a href="https://github.com/firefly-iii/firefly-iii/issues">Request a feature</a>
+    ·
+    <a href="https://github.com/firefly-iii/firefly-iii/discussions">Ask questions</a>
+  </p>
 
 ---
 
-**PMOVES-Wealth**: Making personal finance management intelligent and integrated.
+<p>
+<img align="left" src=".github/assets/img/europe.png" alt="Flag of Europe" height="50"> Billionaires and fascists are breaking democracies and international alliances. Their profits are costing us our safety. (Digital) sovereignty is more important than ever. <strong>Firefly III</strong> is free open source software and originates from, and lives in the European Union (🇳🇱). Support your local software developer for a free and open society.
+</p>
 
-For support, issues, or questions about PMOVES.AI integration, please open an issue in the [PMOVES.AI repository](https://github.com/POWERFULMOVES/PMOVES.AI/issues).
+---
+
+<!-- MarkdownTOC autolink="true" -->
+
+- [About Firefly III](#about-firefly-iii)
+  - [Purpose](#purpose)
+- [Features](#features)
+- [Who's it for?](#whos-it-for)
+- [The Firefly III eco-system](#the-firefly-iii-eco-system)
+- [Getting Started](#getting-started)
+- [Contributing](#contributing)
+- [Support the development of Firefly III](#support-the-development-of-firefly-iii)
+- [License](#license)
+- [Do you need help, or do you want to get in touch?](#do-you-need-help-or-do-you-want-to-get-in-touch)
+- [Acknowledgements](#acknowledgements)
+
+<!-- /MarkdownTOC -->
+
+## About Firefly III
+
+<p align="center">
+	<img src="https://raw.githubusercontent.com/firefly-iii/firefly-iii/develop/.github/assets/img/imac-complete.png" alt="Firefly III on iMac" />
+</p>
+
+"Firefly III" is a (self-hosted) manager for your personal finances. It can help you keep track of your expenses and income, so you can spend less and save more. Firefly III supports the use of budgets, categories and tags. Using a bunch of external tools, you can import data. It also has many neat financial reports available.
+
+Firefly III should give you **insight** into and **control** over your finances. Money should be useful, not scary. You should be able to *see* where it is going, to *feel* your expenses and to... wow, I'm going overboard with this aren't I?
+
+But you get the idea: this is your money. These are your expenses. Stop them from controlling you. I built this tool because I started to dislike money. Having money, not having money, paying bills with money, you get the idea. But no more. I want to feel "safe", whatever my balance is. And I hope this tool can help you. I know it helps me.
+
+### Purpose
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/firefly-iii/firefly-iii/develop/.github/assets/img/ipad-complete.png" alt="Firefly III on iPad" width="600">
+</p>
+
+Personal financial management is pretty difficult, and everybody has their own approach to it. Some people make budgets, other people limit their cashflow by throwing away their credit cards, others try to increase their current cashflow. There are tons of ways to save and earn money. Firefly III works on the principle that if you know where your money is going, you can stop it from going there.
+
+By keeping track of your expenses and your income you can budget accordingly and save money. Stop living from paycheck to paycheck but give yourself the financial wiggle room you need.
+
+You can read more about the purpose of Firefly III in the [documentation](https://docs.firefly-iii.org/).
+
+## Features
+
+Firefly III is pretty feature packed. Some important stuff first:
+
+* It is completely self-hosted and isolated, and will never contact external servers until you explicitly tell it to.
+* It features a REST JSON API that covers almost every part of Firefly III.
+
+The most exciting features are:
+
+* Create [recurring transactions to manage your money](https://docs.firefly-iii.org/explanation/financial-concepts/recurring/).
+* [Rule based transaction handling](https://docs.firefly-iii.org/how-to/firefly-iii/features/rules/) with the ability to create your own rules.
+
+Then the things that make you go "yeah OK, makes sense".
+
+* A [double-entry](https://en.wikipedia.org/wiki/Double-entry_bookkeeping_system) bookkeeping system.
+* Save towards a goal using [piggy banks](https://docs.firefly-iii.org/explanation/financial-concepts/piggy-banks/).
+* View [income and expense reports](https://docs.firefly-iii.org/how-to/firefly-iii/finances/reports/).
+
+And the things you would hope for but not expect:
+
+* 2 factor authentication for extra security 🔒.
+* Supports [any currency you want](https://docs.firefly-iii.org/how-to/firefly-iii/features/currencies/).
+* There is a [Docker image](https://docs.firefly-iii.org/how-to/firefly-iii/installation/docker/).
+
+And to organise everything:
+
+* Clear views that should show you how you're doing.
+* Easy navigation through your records.
+* Lots of charts because we all love them.
+
+Many more features are listed in the [documentation](https://docs.firefly-iii.org/explanation/firefly-iii/about/introduction/).
+
+## Who's it for?
+<img src="https://raw.githubusercontent.com/firefly-iii/firefly-iii/develop/.github/assets/img/iphone-complete.png" alt="Firefly III on iPhone" align="left" width="250">
+
+ This application is for people who want to track their finances, keep an eye on their money **without having to upload their financial records to the cloud**. You're a bit tech-savvy, you like open source software and you don't mind tinkering with (self-hosted) servers.
+ 
+ <br clear="left"/>
+
+## The Firefly III eco-system
+
+Several users have built pretty awesome stuff around the Firefly III API. [Check out these tools in the documentation](https://docs.firefly-iii.org/references/firefly-iii/third-parties/apps/).
+
+## Getting Started
+
+There are many ways to run Firefly III
+1. There is a [demo site](https://demo.firefly-iii.org) with an example financial administration already present.
+2. You can [install it on your server](https://docs.firefly-iii.org/how-to/firefly-iii/installation/self-managed/).
+3. You can [run it using Docker](https://docs.firefly-iii.org/how-to/firefly-iii/installation/docker/).
+4. You can [deploy via Kubernetes](https://firefly-iii.github.io/kubernetes/).
+5. You can [install it using Softaculous](https://www.softaculous.com/softaculous/apps/others/Firefly_III).
+6. You can [install it using AMPPS](https://www.ampps.com/).
+7. You can [install it on Cloudron](https://cloudron.io/store/org.fireflyiii.cloudronapp.html).
+8. You can [install it on Lando](https://gist.github.com/ArtisKrumins/ccb24f31d6d4872b57e7c9343a9d1bf0).
+9. You can [install it on Yunohost](https://github.com/YunoHost-Apps/firefly-iii).
+
+## Contributing
+
+You can contact me at [james@firefly-iii.org](mailto:james@firefly-iii.org), you may open an issue in the [main repository](https://github.com/firefly-iii/firefly-iii) or contact me through [gitter](https://gitter.im/firefly-iii/firefly-iii) and [Mastodon](https://fosstodon.org/@ff3).
+
+Of course, there are some [contributing guidelines](https://docs.firefly-iii.org/explanation/support/#contributing-code) and a [code of conduct](https://github.com/firefly-iii/firefly-iii/blob/main/.github/code_of_conduct.md), which I invite you to check out.
+
+I can always use your help [squashing bugs](https://docs.firefly-iii.org/explanation/support/), thinking about [new features](https://docs.firefly-iii.org/explanation/support/) or [translating Firefly III](https://docs.firefly-iii.org/how-to/firefly-iii/development/translations/) into other languages.
+
+[Sonarcloud][sc-project-url] scans the code of Firefly III. If you want to help improve Firefly III, check out the latest reports and take your pick!
+
+[![Quality Gate Status][sc-gate-shield]][sc-project-url] [![Bugs][sc-bugs-shield]][sc-project-url] [![Code Smells][sc-smells-shield]][sc-project-url] [![Vulnerabilities][sc-vuln-shield]][sc-project-url]
+
+There is also a [security policy](https://github.com/firefly-iii/firefly-iii/security/policy).
+
+[![CII Best Practices][bp-badge]][bp-url]
+
+<!-- SPONSOR TEXT -->
+
+## Support the development of Firefly III
+
+Firefly III is a side gig. With your sponsorship or support, I can spend more time on Firefly III. So, if you like Firefly III, and if it helps you save lots of money, why not send me a dime for every dollar saved! 🥳
+
+OK, that was a joke. But for real, when you feel Firefly III made your life better, please consider contributing as a sponsor. Please check out my [Patreon](https://www.patreon.com/jc5) and [GitHub Sponsors](https://github.com/sponsors/JC5) page for more information. You can also [buy me a ☕️ coffee at ko-fi.com](https://ko-fi.com/Q5Q5R4SH1) or send something my way using [Liberapay](https://liberapay.com/JC5). Thank you for your consideration.
+
+### Sponsorships
+
+Firefly III is sponsored by TestMu AI. Their support allows me to test Firefly III more easily and introduce even fewer bugs with every release.
+
+Browser testing via TestMu AI:
+
+<a href="https://www.testmuai.com/?utm_source=fireflyiii&utm_medium=sponsor" target="_blank">
+<img src=".github/assets/img/testmu.png" alt="TestMu AI" style="vertical-align: middle;" width="250" />
+</a>
+
+<!-- END OF SPONSOR TEXT -->
+
+## License
+
+This work [is licensed](https://github.com/firefly-iii/firefly-iii/blob/main/LICENSE) under the [GNU Affero General Public License v3](https://www.gnu.org/licenses/agpl-3.0.html).
+
+<!-- HELP TEXT -->
+
+## Do you need help, or do you want to get in touch?
+
+Do you want to contact me? You can email me at [james@firefly-iii.org](mailto:james@firefly-iii.org) or get in touch through one of the following support channels:
+
+- [GitHub Discussions](https://github.com/firefly-iii/firefly-iii/discussions/) for questions and support
+- [Gitter.im](https://gitter.im/firefly-iii/firefly-iii) for a good chat and a quick answer
+- [GitHub Issues](https://github.com/firefly-iii/firefly-iii/issues) for bugs and issues
+- <a rel="me" href="https://fosstodon.org/@ff3">Mastodon</a> for news and updates
+
+<!-- END OF HELP TEXT -->
+
+
+## Acknowledgements
+
+Over time, [many people have contributed to Firefly III](https://github.com/firefly-iii/firefly-iii/graphs/contributors). I'm grateful for their support and code contributions.
+
+The Firefly III logo is made by the excellent Cherie Woo.
+
+[packagist-shield]: https://img.shields.io/packagist/v/grumpydictator/firefly-iii.svg?style=flat-square
+[packagist-url]: https://packagist.org/packages/grumpydictator/firefly-iii
+[license-shield]: https://img.shields.io/github/license/firefly-iii/firefly-iii.svg?style=flat-square
+[license-url]: https://www.gnu.org/licenses/agpl-3.0.html
+[stars-shield]: https://img.shields.io/github/stars/firefly-iii/firefly-iii.svg?style=flat-square
+[stars-url]: https://github.com/firefly-iii/firefly-iii/stargazers
+[donate-shield]: https://img.shields.io/badge/donate-%24%20%E2%82%AC-brightgreen?style=flat-square
+[donate-url]: #support-the-development-of-firefly-iii
+[build-shield]: https://api.travis-ci.com/firefly-iii/firefly-iii.svg?branch=master
+[build-url]: https://travis-ci.com/github/firefly-iii/firefly-iii
+[sc-gate-shield]: https://sonarcloud.io/api/project_badges/measure?project=firefly-iii_firefly-iii&metric=alert_status
+[sc-bugs-shield]: https://sonarcloud.io/api/project_badges/measure?project=firefly-iii_firefly-iii&metric=bugs
+[sc-smells-shield]: https://sonarcloud.io/api/project_badges/measure?project=firefly-iii_firefly-iii&metric=code_smells
+[sc-vuln-shield]: https://sonarcloud.io/api/project_badges/measure?project=firefly-iii_firefly-iii&metric=vulnerabilities
+[sc-project-url]: https://sonarcloud.io/dashboard?id=firefly-iii_firefly-iii
+[bp-badge]: https://bestpractices.coreinfrastructure.org/projects/6335/badge
+[bp-url]: https://bestpractices.coreinfrastructure.org/projects/6335 
