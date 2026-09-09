@@ -3,6 +3,10 @@
 [![Stargazers][stars-shield]][stars-url]
 [![Donate][donate-shield]][donate-url]
 
+<p align="center">
+<a href='https://ko-fi.com/Q5Q5R4SH1' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+</p>
+
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
@@ -30,7 +34,7 @@
 ---
 
 <p>
-<img align="left" src=".github/assets/img/europe.png" alt="Flag of Europe" height="50"> Billionaires and fascists are breaking democracies and international alliances. Their profits are costing us our safety. (Digital) sovereignty is more important than ever. <strong>Firefly III</strong> is free open source software and originates from, and lives in the European Union (🇳🇱).
+<img align="left" src=".github/assets/img/europe.png" alt="Flag of Europe" height="50"> Billionaires and fascists are breaking democracies and international alliances. Their profits are costing us our safety. (Digital) sovereignty is more important than ever. <strong>Firefly III</strong> is free open source software and originates from, and lives in the European Union (🇳🇱). Support your local software developer for a free and open society.
 </p>
 
 ---
@@ -159,10 +163,10 @@ OK, that was a joke. But for real, when you feel Firefly III made your life bett
 
 Firefly III is sponsored by TestMu AI. Their support allows me to test Firefly III more easily and introduce even fewer bugs with every release.
 
-Browser testing via:
+Browser testing via TestMu AI:
 
 <a href="https://www.testmuai.com/?utm_source=fireflyiii&utm_medium=sponsor" target="_blank">
-<img src=".github/assets/img/testmu.png" alt="Testmu" style="vertical-align: middle;" width="250" />
+<img src=".github/assets/img/testmu.png" alt="TestMu AI" style="vertical-align: middle;" width="250" />
 </a>
 
 <!-- END OF SPONSOR TEXT -->
